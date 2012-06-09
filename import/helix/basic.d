@@ -32,7 +32,7 @@ OF THE POSSIBILITY OF SUCH DAMAGE.
 Copyright (C) 2006. Victor Nakoryakov.
 
 OpenMesh/D maintainance by Bill Baxter licensed under the LGPL v2.1.
-Port to D2 by Jonathan Giroux (Bloutiouf) licensed under the LGPL v2.1.
+Maintenance by Jonathan Giroux (Bloutiouf) licensed under the LGPL v2.1.
 http://www.gnu.org/licenses/lgpl-2.1.html
 */
 /**
@@ -40,14 +40,14 @@ Module provides _basic numeric routines that are oftenly used in other
 modules or helpful in projects that use helix.
 
 Authors:
-    Victor Nakoryakov (nail-mail[at]mail.ru),
+	Victor Nakoryakov (nail-mail[at]mail.ru),
 	Bill Baxter,
 	Jonathan Giroux (Bloutiouf)
 */
 module helix.basic;
 
-import std.math;
 import helix.config;
+import std.math;
 
 /**
 Approximate equality function. In fact it's just a copy of phobos'es feqrel function,
@@ -55,102 +55,106 @@ but with modifcation that make it suitable for comparison of almost zero numbers
 However the cost of such possibility is little calculation overhead.
 
 Params:
-    x, y        = Numbers to compare.
-    relprec     = Minimal number of mantissa bits that have to be _equal in x and y
-                  to suppose their's equality. Makes sense in comparisons of values
-                  enough far from zero.
-    absprec     = If absolute difference between x and y is less than 2^(-absprec)
-                  they supposed to be _equal. Makes sense in comparisons of values
-                  enough near to zero.
-                
+	x, y        = Numbers to compare.
+	relprec     = Minimal number of mantissa bits that have to be _equal in x and y
+				  to suppose their's equality. Makes sense in comparisons of values
+				  enough far from zero.
+	absprec     = If absolute difference between x and y is less than 2^(-absprec)
+				  they supposed to be _equal. Makes sense in comparisons of values
+				  enough near to zero.
+				
 Returns:
-    true if x and y are supposed to be _equal, false otherwise.
+	true if x and y are supposed to be _equal, false otherwise.
 */
 pure nothrow @trusted bool equal(real x, real y, int relprec = defrelprec, int absprec = defabsprec)
 {
-    /* Author: Don Clugston, 18 Aug 2005.
-     */
+	/* Author: Don Clugston, 18 Aug 2005.
+	 */
 
-    if (x == y)
-        return true; // ensure diff!=0, cope with INF.
+	if (x == y)
+		return true; // ensure diff!=0, cope with INF.
 
-    real diff = fabs(x - y);
-    
-    ushort *pa = cast(ushort*)(&x);
-    ushort *pb = cast(ushort*)(&y);
-    ushort *pd = cast(ushort*)(&diff);
+	real diff = fabs(x - y);
+	
+	ushort *pa = cast(ushort*)(&x);
+	ushort *pb = cast(ushort*)(&y);
+	ushort *pd = cast(ushort*)(&diff);
 
-    // This check is added by me. If absolute difference between
-    // x and y is less than 2^(-absprec) then count them equal.
-    if (pd[4] < 0x3FFF - absprec)
-        return true;
+	// This check is added by me. If absolute difference between
+	// x and y is less than 2^(-absprec) then count them equal.
+	if (pd[4] < 0x3FFF - absprec)
+		return true;
 
-    // The difference in abs(exponent) between x or y and abs(x-y)
-    // is equal to the number of mantissa bits of x which are
-    // equal to y. If negative, x and y have different exponents.
-    // If positive, x and y are equal to 'bitsdiff' bits.
-    // AND with 0x7FFF to form the absolute value.
-    // To avoid out-by-1 errors, we subtract 1 so it rounds down
-    // if the exponents were different. This means 'bitsdiff' is
-    // always 1 lower than we want, except that if bitsdiff==0,
-    // they could have 0 or 1 bits in common.
-    int bitsdiff = ( ((pa[4]&0x7FFF) + (pb[4]&0x7FFF)-1)>>1) - pd[4];
+	// The difference in abs(exponent) between x or y and abs(x-y)
+	// is equal to the number of mantissa bits of x which are
+	// equal to y. If negative, x and y have different exponents.
+	// If positive, x and y are equal to 'bitsdiff' bits.
+	// AND with 0x7FFF to form the absolute value.
+	// To avoid out-by-1 errors, we subtract 1 so it rounds down
+	// if the exponents were different. This means 'bitsdiff' is
+	// always 1 lower than we want, except that if bitsdiff==0,
+	// they could have 0 or 1 bits in common.
+	int bitsdiff = ( ((pa[4]&0x7FFF) + (pb[4]&0x7FFF)-1)>>1) - pd[4];
 
-    if (pd[4] == 0)
-    {   // Difference is denormal
-        // For denormals, we need to add the number of zeros that
-        // lie at the start of diff's mantissa.
-        // We do this by multiplying by 2^real.mant_dig
-        diff *= 0x1p+63;
-        return bitsdiff + real.mant_dig - pd[4] >= relprec;
-    }
+	if (pd[4] == 0)
+	{   // Difference is denormal
+		// For denormals, we need to add the number of zeros that
+		// lie at the start of diff's mantissa.
+		// We do this by multiplying by 2^real.mant_dig
+		diff *= 0x1p+63;
+		return bitsdiff + real.mant_dig - pd[4] >= relprec;
+	}
 
-    if (bitsdiff > 0)
-        return bitsdiff + 1 >= relprec; // add the 1 we subtracted before
+	if (bitsdiff > 0)
+		return bitsdiff + 1 >= relprec; // add the 1 we subtracted before
 
-    // Avoid out-by-1 errors when factor is almost 2.
-    return (bitsdiff == 0) ? (relprec <= 1) : false;
+	// Avoid out-by-1 errors when factor is almost 2.
+	return (bitsdiff == 0) ? (relprec <= 1) : false;
 }
-
 
 template EqualityByNorm(T)
 {
-    pure nothrow @trusted bool equal(T a, T b, int relprec = defrelprec, int absprec = defabsprec)
-    {
-        return .equal((b - a).normSquare, 0.L, relprec, absprec);
-    }
+	pure nothrow @trusted bool equal(T a, T b, int relprec = defrelprec, int absprec = defabsprec)
+	{
+		return .equal((b - a).normSquare, 0.L, relprec, absprec);
+	}
 }
 
-
+/**
+Returns:
+	true if a is strictly less than b, false otherwise.
+*/
 pure nothrow @safe bool less(real a, real b, int relprec = defrelprec, int absprec = defabsprec)
 {
-    return a < b && !equal(a, b, relprec, absprec);
+	return a < b && !equal(a, b, relprec, absprec);
 }
 
-
+/**
+Returns:
+	true if a is strictly greater than b, false otherwise.
+*/
 pure nothrow @safe bool greater(real a, real b, int relprec = defrelprec, int absprec = defabsprec)
 {
-    return a > b && !equal(a, b, relprec, absprec);
+	return a > b && !equal(a, b, relprec, absprec);
 }
 
 /**
 Linear interpolation function.
 Returns:
-    Value interpolated from a to b by value of t. If t is not within range [0; 1]
-    linear extrapolation is applied.
+	Value interpolated from a to b by value of t. If t is not within range [0; 1]
+	linear extrapolation is applied.
 */
 pure nothrow @safe real lerp(real a, real b, real t)
 {
-    return a * (1 - t) + b * t;
+	return a * (1 - t) + b * t;
 }
-
 
 template Lerp(T)
 {
-    pure nothrow @trusted T lerp(T a, T b, real t)
-    {
-        return a * (1 - t) + b * t;
-    }
+	pure nothrow @trusted T lerp(T a, T b, real t)
+	{
+		return a * (1 - t) + b * t;
+	}
 }
 
 /**
@@ -159,23 +163,23 @@ opCmp.
 */
 template MinMax(T)
 {
-    /**
-    Returns:
-        Maximal of a and b.
-    */
-    pure nothrow @safe T max(T a, T b)
-    {
-        return (a > b) ? a : b;
-    }
+	/**
+	Returns:
+		Maximal of a and b.
+	*/
+	pure nothrow @safe T max(T a, T b)
+	{
+		return (a > b) ? a : b;
+	}
 
-    /**
-    Returns:
-        Minimal of a and b.
-    */
-    pure nothrow @safe T min(T a, T b)
-    {
-        return (a < b) ? a : b;
-    }
+	/**
+	Returns:
+		Minimal of a and b.
+	*/
+	pure nothrow @safe T min(T a, T b)
+	{
+		return (a < b) ? a : b;
+	}
 }
 
 /// Introduce min and max functions for basic numeric types.
@@ -204,44 +208,43 @@ alias MinMax!(double).max   max; /// ditto
 alias MinMax!(real).min     min; /// ditto
 alias MinMax!(real).max     max; /// ditto
 
-
 /**
 Contains clamping functions for generic types to which min and max
 functions can be applied.
 */
 template Clamp(T)
 {
-    /**
-    Makes value of x to be not less than inf. Method can change value of x.
-    Returns:
-        Copy of x after clamping is applied.
-    */
-    pure nothrow @safe T clampBelow(ref T x, T inf)
-    {
-        return x = max(x, inf);
-    }
+	/**
+	Makes value of x to be not less than inf. Method can change value of x.
+	Returns:
+		Copy of x after clamping is applied.
+	*/
+	pure nothrow @safe T clampBelow(ref T x, T inf)
+	{
+		return x = max(x, inf);
+	}
 
-    /**
-    Makes value of x to be not greater than sup. Method can change value of x.
-    Returns:
-        Copy of x after clamping is applied.
-    */
-    pure nothrow @safe T clampAbove(ref T x, T sup)
-    {
-        return x = min(x, sup);
-    }
+	/**
+	Makes value of x to be not greater than sup. Method can change value of x.
+	Returns:
+		Copy of x after clamping is applied.
+	*/
+	pure nothrow @safe T clampAbove(ref T x, T sup)
+	{
+		return x = min(x, sup);
+	}
 
-    /**
-    Makes value of x to be nor less than inf nor greater than sup.
-    Method can change value of x.
-    Returns:
-        Copy of x after clamping is applied.
-    */
-    pure nothrow @safe T clamp(ref T x, T inf, T sup)
-    {
-        clampBelow(x, inf);
-        return clampAbove(x, sup);
-    }
+	/**
+	Makes value of x to be nor less than inf nor greater than sup.
+	Method can change value of x.
+	Returns:
+		Copy of x after clamping is applied.
+	*/
+	pure nothrow @safe T clamp(ref T x, T inf, T sup)
+	{
+		clampBelow(x, inf);
+		return clampAbove(x, sup);
+	}
 }
 
 /// Introduce clamping functions for basic numeric types.
@@ -285,13 +288,13 @@ alias Clamp!(real).clamp        clamp;      /// ditto
 /** Contains swap function for generic types. */
 template SimpleSwap(T)
 {
-    /** Swaps values of a and b. */
-    pure nothrow @safe void swap(ref T a, ref T b)
-    {
-        T temp = a;
-        a = b;
-        b = temp;
-    }
+	/** Swaps values of a and b. */
+	pure nothrow @safe void swap(ref T a, ref T b)
+	{
+		T temp = a;
+		a = b;
+		b = temp;
+	}
 }
 
 /// Introduces swap function for basic numeric types.

@@ -17,10 +17,18 @@ Helix can be configured to use different real number's types used internaly by d
 Compilation
 -----------
 
-Library:
+### Library
 
-	dmd -lib import/helix/*.d -oflib/helix.lib -release -O -property
+	dmd import/helix/*.d -oflib/helix.lib -lib -release -O -property
 
+### Unit testing
+
+	dmd import/helix/*.d unittesting.d -ofunittesting -O -property -unittest -g -w -wi && ./unittesting
+
+`./unittesting` returns true (i.e. 0) when all the unit tests pass, and false otherwise, so you can use it for your automatic building systems:
+
+	./unittesting && echo "passed" || echo "failed"
+	
 Authors
 -------
 
@@ -37,18 +45,16 @@ Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions
 are met:
 
-    Redistributions of source code must retain the above copyright
-    notice, this list of conditions and the following disclaimer.
-
-    Redistributions in binary form must reproduce the above
-    copyright notice, this list of conditions and the following
-    disclaimer in the documentation and/or other materials provided
-    with the distribution.
-
-    Neither name of Victor Nakoryakov nor the names of
-    its contributors may be used to endorse or promote products
-    derived from this software without specific prior written
-    permission.
+* Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above
+copyright notice, this list of conditions and the following
+disclaimer in the documentation and/or other materials provided
+with the distribution.
+* Neither name of Victor Nakoryakov nor the names of
+its contributors may be used to endorse or promote products
+derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -67,4 +73,4 @@ Copyright (C) 2006. Victor Nakoryakov.
 
 OpenMesh/D maintainance by Bill Baxter licensed under the [LGPL v2.1](http://www.gnu.org/licenses/lgpl-2.1.html).
 
-Port to D2 by Jonathan Giroux (Bloutiouf) licensed under the [LGPL v2.1](http://www.gnu.org/licenses/lgpl-2.1.html).
+Maintenance by Jonathan Giroux (Bloutiouf) licensed under the [LGPL v2.1](http://www.gnu.org/licenses/lgpl-2.1.html).

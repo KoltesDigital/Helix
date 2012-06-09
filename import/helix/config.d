@@ -32,7 +32,7 @@ OF THE POSSIBILITY OF SUCH DAMAGE.
 Copyright (C) 2006. Victor Nakoryakov.
 
 OpenMesh/D maintainance by Bill Baxter licensed under the LGPL v2.1.
-Port to D2 by Jonathan Giroux (Bloutiouf) licensed under the LGPL v2.1.
+Maintenance by Jonathan Giroux (Bloutiouf) licensed under the LGPL v2.1.
 http://www.gnu.org/licenses/lgpl-2.1.html
 */
 /**
@@ -41,7 +41,7 @@ that should be corrected according to your needs prior to using helix in your
 project.
 
 Authors:
-    Victor Nakoryakov (nail-mail[at]mail.ru),
+	Victor Nakoryakov (nail-mail[at]mail.ru),
 	Bill Baxter,
 	Jonathan Giroux (Bloutiouf)
 */
