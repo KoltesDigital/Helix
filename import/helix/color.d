@@ -423,8 +423,6 @@ private template Color(float_t)
 				case ByteOrder.RGBX: return (ri << 24) | (gi << 16) | (bi << 8);
 				case ByteOrder.BGRX: return (bi << 24) | (gi << 16) | (ri << 8);
 			}
-
-			return 0;
 		}
 
 		/**
@@ -880,8 +878,6 @@ private template Color(float_t)
 				case ByteOrder.RGBA: return (ri << 24) | (gi << 16) | (bi <<  8) | (ai << 0);
 				case ByteOrder.BGRA: return (bi << 24) | (gi << 16) | (ri <<  8) | (ai << 0);
 			}
-
-			return 0;
 		}
 
 		/**
