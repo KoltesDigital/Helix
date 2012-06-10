@@ -2269,14 +2269,14 @@ private template LinearAlgebra(float_t)
 		}
 	
 		/** Constructs _scale matrix with _scale coefficients specified as arguments. */
-		pure nothrow @safe static Matrix33 scale(float_t x, float_t y, float_t z)
+		pure nothrow @safe static Matrix33 scale(float_t sx, float_t sy, float_t sz)
 		{
 			Matrix33 mat = identity;
 			with (mat)
 			{
-				m00 = x;
-				m11 = y;
-				m22 = z;
+				m00 = sx;
+				m11 = sy;
+				m22 = sz;
 			}
 	
 			return mat;
@@ -2415,6 +2415,20 @@ private template LinearAlgebra(float_t)
 			return mat;
 		}
 		
+		/** Constructs _translation matrix with offset values specified as arguments. */
+		pure nothrow @safe static Matrix33 translation(float_t x, float_t y)
+		{
+			return Matrix33(1, 0, x,
+							0, 1, y,
+							0, 0, 1);
+		}
+	
+		/** Constructs _translation matrix with offset values specified as v's components. */
+		pure nothrow @safe static Matrix33 translation(Vector2 v)
+		{
+			return translation(v.x, v.y);
+		}
+		
 		/**
 		Returns: Inverse copy of this matrix.
 		
@@ -2510,6 +2524,32 @@ private template LinearAlgebra(float_t)
 				m01, m11, m21,
 				m02, m12, m22 );
 		}
+		
+		/** R/W property. Corner 2x2 minor. */
+		const pure nothrow @safe @property Matrix22 cornerMinor()
+		{
+			return Matrix22(m00, m01,
+							m10, m11);
+		}
+		
+		/** ditto */
+		pure nothrow @safe @property void cornerMinor(Matrix22 mat)
+		{
+			m00 = mat.m00;        m01 = mat.m01;
+			m10 = mat.m10;        m11 = mat.m11;
+		}
+		
+		const pure nothrow @safe @property float_t x()		{ return m02; }
+		const pure nothrow @safe @property float_t y()		{ return m12; }
+		const pure nothrow @safe @property float_t w()		{ return m22; }
+		const pure nothrow @safe @property Vector2 xy()		{ return Vector2(m02, m12); }
+		const pure nothrow @safe @property Vector3 xyw()	{ return Vector3(m02, m12, m22); }
+		
+		pure nothrow @safe @property void x(float_t val)	{ m02 = val; }
+		pure nothrow @safe @property void y(float_t val)	{ m12 = val; }
+		pure nothrow @safe @property void w(float_t val)	{ m22 = val; }
+		pure nothrow @safe @property void xy(Vector2 val)	{ m02 = val.x; m12 = val.y; }
+		pure nothrow @safe @property void xyw(Vector3 val)	{ m02 = val.x; m12 = val.y; m22 = val.z; }
 		
 		/**
 		Makes polar decomposition of this matrix. Denote this matrix with 'M', in
@@ -2959,14 +2999,14 @@ private template LinearAlgebra(float_t)
 		}
 	
 		/** Constructs _scale matrix with _scale coefficients specified as arguments. */
-		pure nothrow @safe static Matrix44 scale(float_t x, float_t y, float_t z)
+		pure nothrow @safe static Matrix44 scale(float_t sx, float_t sy, float_t sz)
 		{
 			Matrix44 mat = identity;
 			with (mat)
 			{
-				m00 = x;
-				m11 = y;
-				m22 = z;            
+				m00 = sx;
+				m11 = sy;
+				m22 = sz;            
 			}
 	
 			return mat;
@@ -3331,6 +3371,26 @@ private template LinearAlgebra(float_t)
 			m10 = mat.m10;        m11 = mat.m11;        m12 = mat.m12;
 			m20 = mat.m20;        m21 = mat.m21;        m22 = mat.m22;
 		}
+		
+		const pure nothrow @safe @property float_t x()		{ return m03; }
+		const pure nothrow @safe @property float_t y()		{ return m13; }
+		const pure nothrow @safe @property float_t z()		{ return m23; }
+		const pure nothrow @safe @property float_t w()		{ return m33; }
+		const pure nothrow @safe @property Vector2 xy()		{ return Vector2(m03, m13); }
+		const pure nothrow @safe @property Vector2 xz()		{ return Vector2(m03, m23); }
+		const pure nothrow @safe @property Vector2 yz()		{ return Vector2(m13, m23); }
+		const pure nothrow @safe @property Vector3 xyz()	{ return Vector3(m03, m13, m23); }
+		const pure nothrow @safe @property Vector4 xyzw()	{ return v[3]; }
+		
+		pure nothrow @safe @property void x(float_t val)	{ m03 = val; }
+		pure nothrow @safe @property void y(float_t val)	{ m13 = val; }
+		pure nothrow @safe @property void z(float_t val)	{ m23 = val; }
+		pure nothrow @safe @property void w(float_t val)	{ m33 = val; }
+		pure nothrow @safe @property void xy(Vector2 val)	{ m03 = val.x; m13 = val.y; }
+		pure nothrow @safe @property void xz(Vector2 val)	{ m03 = val.x; m23 = val.y; }
+		pure nothrow @safe @property void yz(Vector2 val)	{ m13 = val.x; m23 = val.y; }
+		pure nothrow @safe @property void xyz(Vector3 val)	{ m03 = val.x; m13 = val.y; m23 = val.z; }
+		pure nothrow @safe @property void xyzw(Vector4 val)	{ v[3] = val; }
 		
 		/**
 		Standard operators that have intuitive meaning, same as in classical math. Exception
