@@ -103,7 +103,7 @@ in implemented structs and routines.
 */
 private template LinearAlgebra(float_t)
 {
-	alias helix.basic.equal          equal;
+	alias helix.basic.equal                  equal;
 	
 	alias .LinearAlgebra!(float).Vector2     Vector2f;
 	alias .LinearAlgebra!(float).Vector3     Vector3f;
@@ -128,17 +128,17 @@ private template LinearAlgebra(float_t)
 	alias .LinearAlgebra!(real).Matrix22     Matrix22r;
 	alias .LinearAlgebra!(real).Matrix33     Matrix33r;
 	alias .LinearAlgebra!(real).Matrix44     Matrix44r;
-
+	
 	/************************************************************************************
 	Two dimensional vector.
-
+	
 	For formal definition of vector, meaning of possible operations and related
 	information see $(LINK http://en.wikipedia.org/wiki/Vector_(spatial)).
 	*************************************************************************************/
 	struct Vector2
 	{
 		enum { length = 2u }
-
+		
 		align(1)
 		{
 			float_t x; /// Components of vector.
@@ -155,7 +155,7 @@ private template LinearAlgebra(float_t)
 		
 		/**
 		Method to construct vector in C-like syntax.
-
+		
 		Examples:
 		------------
 		Vector2 myVector = Vector2(1, 2);
@@ -176,6 +176,170 @@ private template LinearAlgebra(float_t)
 			return v;
 		}
 		
+		/** Returns: Axis for which projection of this vector on it will be longest. */
+		const pure nothrow @safe @property Ort dominatingAxis()
+		{
+			return (x > y) ? Ort.X : Ort.Y;
+		}
+		
+		/** Returns: Whether all components are normalized numbers. */
+		const pure nothrow @safe @property bool isNormal()
+		{
+			return std.math.isNormal(x) && std.math.isNormal(y);
+		}
+		
+		/**
+		Returns: Whether this vector is unit.
+		Params:
+			relprec, absprec = Parameters passed to equal function while comparison of
+							   norm square and 1. Have the same meaning as in equal function.
+		*/
+		const pure nothrow @safe @property bool isUnit(int relprec = defrelprec, int absprec = defabsprec)
+		{
+			return equal( normSquare(), 1, relprec, absprec );
+		}
+		
+		/** Returns: Norm (also known as length, magnitude) of vector. */
+		const pure nothrow @safe @property real norm()
+		{
+			return hypot(x, y);
+		}
+		
+		/**
+		Normalizes this vector.
+		Returns: the original length.
+		*/
+		pure nothrow @safe real normalize()
+		{
+			real n = norm;
+			this /= n;
+			return n;
+		}
+		
+		/** Returns: Normalized copy of this vector. */
+		const pure nothrow @safe @property Vector2 normalized()
+		{
+			real n = norm;
+			return Vector2(x / n, y / n);
+		}
+		
+		/**
+		Returns: Square of vector's norm.
+		
+		Since this method doesn't need calculation of square root it is better
+		to use it instead of norm() when you can. For example, if you want just
+		to know which of 2 vectors is longer it's better to compare their norm
+		squares instead of their norm.
+		*/
+		const pure nothrow @safe @property real normSquare()
+		{
+			return x*x + y*y;
+		}
+		
+		/** Returns: Component corresponded to passed index. */
+		pure @safe float_t opIndex(size_t ort)
+		in { assert(ort <= Ort.Y); }
+		body
+		{
+			return ptr[cast(int)ort];
+		}
+		
+		/** Assigns new _value to component corresponded to passed index. */
+		pure @safe void opIndexAssign(float_t value, size_t ort)
+		in { assert(ort <= Ort.Y); }
+		body
+		{
+			ptr[cast(int)ort] = value;
+		}
+		
+		/**
+		Standard operators that have intuitive meaning, same as in classical math.
+		
+		Note that division operators do no cheks of value of k, so in case of division
+		by 0 result vector will have infinity components. You can check this with isNormal()
+		method.
+		*/
+		const pure nothrow @safe bool opEquals(Vector2 v)
+		{
+			return x == v.x && y == v.y;
+		}
+		
+		/** ditto */
+		const pure nothrow @safe Vector2 opNeg()
+		{
+			return Vector2(-x, -y);
+		}
+		
+		/** ditto */
+		const pure nothrow @safe Vector2 opAdd(Vector2 v)
+		{
+			return Vector2(x + v.x, y + v.y);
+		}
+		
+		/** ditto */
+		pure nothrow @safe void opAddAssign(Vector2 v)
+		{
+			x += v.x;
+			y += v.y;
+		}
+		
+		/** ditto */
+		const pure nothrow @safe Vector2 opSub(Vector2 v)
+		{
+			return Vector2(x - v.x, y - v.y);
+		}
+		
+		/** ditto */
+		pure nothrow @safe void opSubAssign(Vector2 v)
+		{
+			x -= v.x;
+			y -= v.y;
+		}
+		
+		/** ditto */
+		const pure nothrow @safe Vector2 opMul(real k)
+		{
+			return Vector2(x * k, y * k);
+		}
+		
+		/** ditto */
+		pure nothrow @safe void opMulAssign(real k)
+		{
+			x *= k;
+			y *= k;
+		}
+		
+		/** ditto */
+		const pure nothrow @safe Vector2 opMul_r(real k)
+		{
+			return Vector2(x * k, y * k);
+		}
+		
+		/** ditto */
+		const pure nothrow @safe Vector2 opDiv(real k)
+		{
+			return Vector2(x / k, y / k);
+		}
+		
+		/** ditto */
+		pure nothrow @safe void opDivAssign(real k)
+		{
+			x /= k;
+			y /= k;
+		}
+		
+		/** Returns: A vector perpendicular to this one */
+		const pure nothrow @safe @property Vector2 perp() 
+		{
+			return Vector2(-y,x);
+		}
+		
+		/** Returns: float_t pointer to x component of this vector. It's like a _ptr method for arrays. */
+		pure nothrow @safe @property float_t* ptr()
+		{
+			return cast(float_t*)&this;
+		}
+		
 		/** Sets values of components to passed values. */
 		pure nothrow @safe void set(float_t x, float_t y)
 		{
@@ -190,167 +354,9 @@ private template LinearAlgebra(float_t)
 			this.y = p[1];
 		}
 		
-		/** Returns: Norm (also known as length, magnitude) of vector. */
-		const pure nothrow @safe @property real norm()
-		{
-			return hypot(x, y);
-		}
-	
-		/**
-		Returns: Square of vector's norm.
+		/** Returns: String representation. */
+		const string toString() { return format("[",x,", ",y,"]"); }
 		
-		Since this method doesn't need calculation of square root it is better
-		to use it instead of norm() when you can. For example, if you want just
-		to know which of 2 vectors is longer it's better to compare their norm
-		squares instead of their norm.
-		*/
-		const pure nothrow @safe @property real normSquare()
-		{
-			return x*x + y*y;
-		}
-	
-		/** Normalizes this vector. Returns: the original length. */
-		pure nothrow @safe real normalize()
-		{
-			real len = norm();
-			this /= len;
-			return len;
-		}
-	
-		/** Returns: Normalized copy of this vector. */
-		const pure nothrow @safe @property Vector2 normalized()
-		{
-			real n = norm;
-			return Vector2(x / n, y / n);
-		}
-	
-		/**
-		Returns: Whether this vector is unit.
-		Params:
-			relprec, absprec = Parameters passed to equal function while comparison of
-							   norm square and 1. Have the same meaning as in equal function.
-		*/
-		const pure nothrow @safe @property bool isUnit(int relprec = defrelprec, int absprec = defabsprec)
-		{
-			return equal( normSquare(), 1, relprec, absprec );
-		}
-	
-		/** Returns: Axis for which projection of this vector on it will be longest. */
-		const pure nothrow @safe @property Ort dominatingAxis()
-		{
-			return (x > y) ? Ort.X : Ort.Y;
-		}
-	
-		/** Returns: Whether all components are normalized numbers. */
-		const pure nothrow @safe @property bool isNormal()
-		{
-			return std.math.isNormal(x) && std.math.isNormal(y);
-		}
-	
-		/** Returns: float_t pointer to x component of this vector. It's like a _ptr method for arrays. */
-		pure nothrow @safe @property float_t* ptr()
-		{
-			return cast(float_t*)&this;
-		}
-	
-		/** Returns: Component corresponded to passed index. */
-		pure @safe float_t opIndex(size_t ort)
-		in { assert(ort <= Ort.Y); }
-		body
-		{
-			return ptr[cast(int)ort];
-		}
-	
-		/** Assigns new _value to component corresponded to passed index. */
-		pure @safe void opIndexAssign(float_t value, size_t ort)
-		in { assert(ort <= Ort.Y); }
-		body
-		{
-			ptr[cast(int)ort] = value;
-		}
-	
-		/**
-		Standard operators that have intuitive meaning, same as in classical math.
-		
-		Note that division operators do no cheks of value of k, so in case of division
-		by 0 result vector will have infinity components. You can check this with isNormal()
-		method.
-		*/
-		const pure nothrow @safe bool opEquals(Vector2 v)
-		{
-			return x == v.x && y == v.y;
-		}
-	
-		/** ditto */
-		const pure nothrow @safe Vector2 opNeg()
-		{
-			return Vector2(-x, -y);
-		}
-	
-		/** ditto */
-		const pure nothrow @safe Vector2 opAdd(Vector2 v)
-		{
-			return Vector2(x + v.x, y + v.y);
-		}
-	
-		/** ditto */
-		pure nothrow @safe void opAddAssign(Vector2 v)
-		{
-			x += v.x;
-			y += v.y;
-		}
-	
-		/** ditto */
-		const pure nothrow @safe Vector2 opSub(Vector2 v)
-		{
-			return Vector2(x - v.x, y - v.y);
-		}
-	
-		/** ditto */
-		pure nothrow @safe void opSubAssign(Vector2 v)
-		{
-			x -= v.x;
-			y -= v.y;
-		}
-	
-		/** ditto */
-		const pure nothrow @safe Vector2 opMul(real k)
-		{
-			return Vector2(x * k, y * k);
-		}
-	
-		/** ditto */
-		pure nothrow @safe void opMulAssign(real k)
-		{
-			x *= k;
-			y *= k;
-		}
-	
-		/** ditto */
-		const pure nothrow @safe Vector2 opMul_r(real k)
-		{
-			return Vector2(x * k, y * k);
-		}
-	
-		/** ditto */
-		const pure nothrow @safe Vector2 opDiv(real k)
-		{
-			return Vector2(x / k, y / k);
-		}
-	
-		/** ditto */
-		pure nothrow @safe void opDivAssign(real k)
-		{
-			x /= k;
-			y /= k;
-		}
-	
-		/** Returns: A vector perpendicular to this one */
-		const pure nothrow @safe @property Vector2 perp() 
-		{
-			return Vector2(-y,x);
-		}
-
 		/** Returns: Copy of this vector with float type components */
 		const pure nothrow @safe Vector2f toVector2f()
 		{
@@ -368,7 +374,7 @@ private template LinearAlgebra(float_t)
 		{
 			return Vector2r(cast(real)x, cast(real)y);
 		}
-	
+		
 		/**
 		Routines known as swizzling.
 		Returns:
@@ -377,8 +383,15 @@ private template LinearAlgebra(float_t)
 		*/
 		const pure nothrow @safe @property Vector3 xy0()    { return Vector3(x, y, 0); }
 		const pure nothrow @safe @property Vector3 x0y()    { return Vector3(x, 0, y); } /// ditto
-
-		const string toString() { return format("[",x,", ",y,"]"); }
+	}
+	
+	/**
+	Returns: Cross product between passed vectors. Result is scalar c
+	so that [a.x a.y 0], [b.x b.y 0], [0,0,c] forms right-hand tripple.
+	*/
+	pure nothrow @safe real cross(Vector2 a, Vector2 b)
+	{
+		return a.x * b.y - b.x * a.y;
 	}
 	
 	/** Returns: Dot product between passed vectors. */
@@ -394,29 +407,19 @@ private template LinearAlgebra(float_t)
 						 a.y * b.x, a.y * b.y);
 	}
 		
-	/**
-	Returns: Cross product between passed vectors. Result is scalar c
-	so that [a.x a.y 0], [b.x b.y 0], [0,0,c] forms right-hand tripple.
-	*/
-	pure nothrow @safe real cross(Vector2 a, Vector2 b)
-	{
-		return a.x * b.y - b.x * a.y;
-	}
-
 	alias EqualityByNorm!(Vector2).equal equal; /// Introduces approximate equality function for Vector2.
 	alias Lerp!(Vector2).lerp lerp;             /// Introduces linear interpolaton function for Vector2.
 	
-	
 	/************************************************************************************
 	Three dimensional vector.
-
+	
 	For formal definition of vector, meaning of possible operations and related
 	information see $(LINK http://en.wikipedia.org/wiki/Vector_(spatial)).
 	*************************************************************************************/
 	struct Vector3
 	{
 		enum { length = 3u }
-
+		
 		align(1)
 		{
 			float_t x; /// Components of vector.
@@ -427,7 +430,7 @@ private template LinearAlgebra(float_t)
 		static immutable
 		{
 			Vector3 nan = { float_t.nan, float_t.nan, float_t.nan }; /// Vector with all components set to NaN.
-			Vector3 zero = {0,0,0};    // The zero vector
+			Vector3 zero = {0,0,0};    /// The zero vector
 			Vector3 unitX = { 1, 0, 0 };  /// Unit vector codirectional with corresponding axis.
 			Vector3 unitY = { 0, 1, 0 };  /// ditto
 			Vector3 unitZ = { 0, 0, 1 };  /// ditto
@@ -435,13 +438,13 @@ private template LinearAlgebra(float_t)
 		
 		/**
 		Method to construct vector in C-like syntax.
-
+		
 		Examples:
 		------------
 		Vector3 myVector = Vector3(1, 2, 3);
 		------------
 		*/
-		pure nothrow @safe static Vector3 opCall(float_t x, float_t y, float_t z)
+		static pure nothrow @safe Vector3 opCall(float_t x, float_t y, float_t z)
 		{
 			Vector3 v;
 			v.set(x, y, z);
@@ -449,11 +452,173 @@ private template LinearAlgebra(float_t)
 		}
 		
 		/** Method to construct from array */
-		pure nothrow @safe static Vector3 opCall(float_t[3] p)
+		static pure nothrow @safe Vector3 opCall(float_t[3] p)
 		{
 			Vector3 v;
 			v.set(p);
 			return v;
+		}
+		
+		/** Returns: Axis for which projection of this vector on it will be longest. */
+		const pure nothrow @safe @property Ort dominatingAxis()
+		{
+			if (x > y)
+				return (x > z) ? Ort.X : Ort.Z;
+			else
+				return (y > z) ? Ort.Y : Ort.Z;
+		}
+		
+		/** Returns: Whether all components are normalized numbers. */
+		const pure nothrow @safe @property bool isNormal()
+		{
+			return std.math.isNormal(x) && std.math.isNormal(y) && std.math.isNormal(z);
+		}
+		
+		/**
+		Returns: Whether this vector is unit.
+		Params:
+			relprec, absprec = Parameters passed to equal function while comparison of
+							   norm square and 1. Have the same meaning as in equal function.
+		*/
+		const pure nothrow @safe @property bool isUnit(int relprec = defrelprec, int absprec = defabsprec)
+		{
+			return equal( normSquare(), 1, relprec, absprec );
+		}
+		
+		/** Returns: Norm (also known as length, magnitude) of vector. */
+		const pure nothrow @safe @property real norm()
+		{
+			return sqrt(x*x + y*y + z*z);
+		}
+		
+		/** Normalizes this vector. Returns: the original length */
+		pure nothrow @safe real normalize()
+		{
+			real len = norm();
+			this /= len;
+			return len;
+		}
+		
+		/** Returns: Normalized copy of this vector. */
+		const pure nothrow @safe @property Vector3 normalized()
+		{
+			real n = norm;
+			return Vector3(x / n, y / n, z / n);
+		}
+		
+		/**
+		Returns: Square of vector's norm.
+		
+		Since this method doesn't need calculation of square root it is better
+		to use it instead of norm() when you can. For example, if you want just
+		to know which of 2 vectors is longer it's better to compare their norm
+		squares instead of their norm.
+		*/
+		const pure nothrow @safe @property real normSquare()
+		{
+			return x*x + y*y + z*z;
+		}
+		
+		/** Returns: Component corresponded to passed index. */
+		pure @safe float_t opIndex(size_t ort)
+		in { assert(ort <= Ort.Z); }
+		body
+		{
+			return ptr[cast(int)ort];
+		}
+		
+		/** Assigns new _value to component corresponded to passed index. */
+		pure @safe void opIndexAssign(float_t value, size_t ort)
+		in { assert(ort <= Ort.Z); }
+		body
+		{
+			ptr[cast(int)ort] = value;
+		}
+		
+		/**
+		Standard operators that have intuitive meaning, same as in classical math.
+		
+		Note that division operators do no cheks of value of k, so in case of division
+		by 0 result vector will have infinity components. You can check this with isNormal()
+		method.
+		*/
+		const pure nothrow @safe bool opEquals(Vector3 v)
+		{
+			return x == v.x && y == v.y && z == v.z;
+		}
+		
+		/** ditto */
+		const pure nothrow @safe Vector3 opNeg()
+		{
+			return Vector3(-x, -y, -z);
+		}
+		
+		/** ditto */
+		const pure nothrow @safe Vector3 opAdd(Vector3 v)
+		{
+			return Vector3(x + v.x, y + v.y, z + v.z);
+		}
+		
+		/** ditto */
+		pure nothrow @safe void opAddAssign(Vector3 v)
+		{
+			x += v.x;
+			y += v.y;
+			z += v.z;
+		}
+		
+		/** ditto */
+		const pure nothrow @safe Vector3 opSub(Vector3 v)
+		{
+			return Vector3(x - v.x, y - v.y, z - v.z);
+		}
+		
+		/** ditto */
+		pure nothrow @safe void opSubAssign(Vector3 v)
+		{
+			x -= v.x;
+			y -= v.y;
+			z -= v.z;
+		}
+		
+		/** ditto */
+		const pure nothrow @safe Vector3 opMul(real k)
+		{
+			return Vector3(x * k, y * k, z * k);
+		}
+		
+		/** ditto */
+		pure nothrow @safe void opMulAssign(real k)
+		{
+			x *= k;
+			y *= k;
+			z *= k;
+		}
+		
+		/** ditto */
+		const pure nothrow @safe Vector3 opMul_r(real k)
+		{
+			return Vector3(x * k, y * k, z * k);
+		}
+		
+		/** ditto */
+		const pure nothrow @safe Vector3 opDiv(real k)
+		{
+			return Vector3(x / k, y / k, z / k);
+		}
+		
+		/** ditto */
+		pure nothrow @safe void opDivAssign(real k)
+		{
+			x /= k;
+			y /= k;
+			z /= k;
+		}
+		
+		/** Returns: float_t pointer to x component of this vector. It's like a _ptr method for arrays. */
+		pure nothrow @safe @property float_t* ptr()
+		{
+			return cast(float_t*)(&x);
 		}
 		
 		/** Sets values of components to passed values. */
@@ -471,169 +636,9 @@ private template LinearAlgebra(float_t)
 			this.y = p[1];
 			this.z = p[2];
 		}
-	
 		
-		/** Returns: Norm (also known as length, magnitude) of vector. */
-		const pure nothrow @safe @property real norm()
-		{
-			return sqrt(x*x + y*y + z*z);
-		}
-	
-		/**
-		Returns: Square of vector's norm.
-		
-		Since this method doesn't need calculation of square root it is better
-		to use it instead of norm() when you can. For example, if you want just
-		to know which of 2 vectors is longer it's better to compare their norm
-		squares instead of their norm.
-		*/
-		const pure nothrow @safe @property real normSquare()
-		{
-			return x*x + y*y + z*z;
-		}
-	
-		/** Normalizes this vector. Returns: the original length */
-		pure nothrow @safe real normalize()
-		{
-			real len = norm();
-			this /= len;
-			return len;
-		}
-	
-		/** Returns: Normalized copy of this vector. */
-		const pure nothrow @safe @property Vector3 normalized()
-		{
-			real n = norm;
-			return Vector3(x / n, y / n, z / n);
-		}
-	
-		/**
-		Returns: Whether this vector is unit.
-		Params:
-			relprec, absprec = Parameters passed to equal function while comparison of
-							   norm square and 1. Have the same meaning as in equal function.
-		*/
-		const pure nothrow @safe @property bool isUnit(int relprec = defrelprec, int absprec = defabsprec)
-		{
-			return equal( normSquare(), 1, relprec, absprec );
-		}
-	
-		/** Returns: Axis for which projection of this vector on it will be longest. */
-		const pure nothrow @safe @property Ort dominatingAxis()
-		{
-			if (x > y)
-				return (x > z) ? Ort.X : Ort.Z;
-			else
-				return (y > z) ? Ort.Y : Ort.Z;
-		}
-	
-		/** Returns: Whether all components are normalized numbers. */
-		const pure nothrow @safe @property bool isNormal()
-		{
-			return std.math.isNormal(x) && std.math.isNormal(y) && std.math.isNormal(z);
-		}
-	
-		/** Returns: float_t pointer to x component of this vector. It's like a _ptr method for arrays. */
-		pure nothrow @safe @property float_t* ptr()
-		{
-			return cast(float_t*)(&x);
-		}
-	
-		/** Returns: Component corresponded to passed index. */
-		pure @safe float_t opIndex(size_t ort)
-		in { assert(ort <= Ort.Z); }
-		body
-		{
-			return ptr[cast(int)ort];
-		}
-	
-		/** Assigns new _value to component corresponded to passed index. */
-		pure @safe void opIndexAssign(float_t value, size_t ort)
-		in { assert(ort <= Ort.Z); }
-		body
-		{
-			ptr[cast(int)ort] = value;
-		}
-	
-		/**
-		Standard operators that have intuitive meaning, same as in classical math.
-		
-		Note that division operators do no cheks of value of k, so in case of division
-		by 0 result vector will have infinity components. You can check this with isNormal()
-		method.
-		*/
-		const pure nothrow @safe bool opEquals(Vector3 v)
-		{
-			return x == v.x && y == v.y && z == v.z;
-		}
-	
-		/** ditto */
-		const pure nothrow @safe Vector3 opNeg()
-		{
-			return Vector3(-x, -y, -z);
-		}
-	
-		/** ditto */
-		const pure nothrow @safe Vector3 opAdd(Vector3 v)
-		{
-			return Vector3(x + v.x, y + v.y, z + v.z);
-		}
-	
-		/** ditto */
-		pure nothrow @safe void opAddAssign(Vector3 v)
-		{
-			x += v.x;
-			y += v.y;
-			z += v.z;
-		}
-	
-		/** ditto */
-		const pure nothrow @safe Vector3 opSub(Vector3 v)
-		{
-			return Vector3(x - v.x, y - v.y, z - v.z);
-		}
-	
-		/** ditto */
-		pure nothrow @safe void opSubAssign(Vector3 v)
-		{
-			x -= v.x;
-			y -= v.y;
-			z -= v.z;
-		}
-	
-		/** ditto */
-		const pure nothrow @safe Vector3 opMul(real k)
-		{
-			return Vector3(x * k, y * k, z * k);
-		}
-	
-		/** ditto */
-		pure nothrow @safe void opMulAssign(real k)
-		{
-			x *= k;
-			y *= k;
-			z *= k;
-		}
-	
-		/** ditto */
-		const pure nothrow @safe Vector3 opMul_r(real k)
-		{
-			return Vector3(x * k, y * k, z * k);
-		}
-	
-		/** ditto */
-		const pure nothrow @safe Vector3 opDiv(real k)
-		{
-			return Vector3(x / k, y / k, z / k);
-		}
-	
-		/** ditto */
-		pure nothrow @safe void opDivAssign(real k)
-		{
-			x /= k;
-			y /= k;
-			z /= k;
-		}
+		/** Returns: String representation. */
+		const string toString() { return format("[",x,", ",y,", ", z, "]"); }
 		
 		/** Returns: Copy of this vector with float type components */
 		const pure nothrow @safe Vector3f toVector3f()
@@ -646,14 +651,13 @@ private template LinearAlgebra(float_t)
 		{
 			return Vector3d(cast(double)x, cast(double)y, cast(double)z);
 		}
-
+		
 		/** Returns: Copy of this vector with real type components */
 		const pure nothrow @safe Vector3r toVector3r()
 		{
 			return Vector3r(cast(real)x, cast(real)y, cast(real)z);
 		}
-
-	
+		
 		/**
 		Routines known as swizzling.
 		Returns:
@@ -661,34 +665,24 @@ private template LinearAlgebra(float_t)
 			that correspond to method name.
 		*/
 		const pure nothrow @safe @property Vector4 xyz0()        { return Vector4(x,y,z,0); }
-		const pure nothrow @safe @property Vector4 xyz1()        { return Vector4(x,y,z,1); } /// ditto
-		const pure nothrow @safe @property Vector2 xy()          { return Vector2(x, y); }    /// ditto
-		const pure nothrow @safe @property Vector2 xz()          { return Vector2(x, z); }    /// ditto
-		const pure nothrow @safe @property Vector2 yz()          { return Vector2(y, z); }    /// ditto
+		const pure nothrow @safe @property Vector4 xyz1()        { return Vector4(x,y,z,1); }	/// ditto
+		const pure nothrow @safe @property Vector2 xy()          { return Vector2(x, y); }		/// ditto
+		const pure nothrow @safe @property Vector2 xz()          { return Vector2(x, z); }		/// ditto
+		const pure nothrow @safe @property Vector2 yz()          { return Vector2(y, z); }		/// ditto
 		
 		/**
 		Routines known as swizzling.
 		Assigns new values to some components corresponding to method name.
 		*/
 		pure nothrow @safe @property void xy(Vector2 v)    { x = v.x; y = v.y; }
-		pure nothrow @safe @property void xz(Vector2 v)    { x = v.x; z = v.y; }        /// ditto
-		pure nothrow @safe @property void yz(Vector2 v)    { y = v.x; z = v.y; }        /// ditto
-
-		const string toString() { return format("[",x,", ",y,", ", z, "]"); }
+		pure nothrow @safe @property void xz(Vector2 v)    { x = v.x; z = v.y; }	/// ditto
+		pure nothrow @safe @property void yz(Vector2 v)    { y = v.x; z = v.y; }	/// ditto
 	}
 	
 	/** Returns: Dot product between passed vectors. */
 	pure nothrow @safe real dot(Vector3 a, Vector3 b)
 	{
 		return a.x * b.x + a.y * b.y + a.z * b.z;
-	}
-	
-	/** Returns: Outer product between passed vectors. */
-	pure nothrow @safe Matrix33 outer(Vector3 a, Vector3 b)
-	{
-		return Matrix33( a.x * b.x,  a.x * b.y,  a.x * b.z,
-						 a.y * b.x,  a.y * b.y,  a.y * b.z,
-						 a.z * b.x,  a.z * b.y,  a.z * b.z);
 	}
 	
 	/**
@@ -734,12 +728,20 @@ private template LinearAlgebra(float_t)
 			t.isUnit(relprec, absprec);
 	}
 	
+	/** Returns: Outer product between passed vectors. */
+	pure nothrow @safe Matrix33 outer(Vector3 a, Vector3 b)
+	{
+		return Matrix33( a.x * b.x,  a.x * b.y,  a.x * b.z,
+						 a.y * b.x,  a.y * b.y,  a.y * b.z,
+						 a.z * b.x,  a.z * b.y,  a.z * b.z);
+	}
+	
 	alias EqualityByNorm!(Vector3).equal equal; /// Introduces approximate equality function for Vector3.
 	alias Lerp!(Vector3).lerp lerp;             /// Introduces linear interpolation function for Vector3.
 	
 	/************************************************************************************
 	4D vector.
-
+	
 	For formal definition of vector, meaning of possible operations and related
 	information see $(LINK http://en.wikipedia.org/wiki/Vector_(spatial)),
 	$(LINK http://en.wikipedia.org/wiki/Homogeneous_coordinates).
@@ -747,7 +749,7 @@ private template LinearAlgebra(float_t)
 	struct Vector4
 	{
 		enum { length = 4u }
-
+		
 		align(1)
 		{
 			float_t x; /// Components of vector.
@@ -756,11 +758,10 @@ private template LinearAlgebra(float_t)
 			float_t w; /// ditto
 		}
 		
-		/// Vector with all components set to NaN.
 		static immutable
 		{
-			Vector4 nan = { float_t.nan, float_t.nan, float_t.nan, float_t.nan };
-			Vector4 zero = { 0,0,0,0 };
+			Vector4 nan = { float_t.nan, float_t.nan, float_t.nan, float_t.nan }; /// Vector with all components set to NaN.
+			Vector4 zero = { 0,0,0,0 }; /// The zero vector.
 			Vector4 unitX = { 1, 0, 0, 0 }; /// Unit vector codirectional with corresponding axis.
 			Vector4 unitY = { 0, 1, 0, 0 }; /// ditto
 			Vector4 unitZ = { 0, 0, 1, 0 }; /// ditto
@@ -769,7 +770,7 @@ private template LinearAlgebra(float_t)
 		
 		/**
 		Methods to construct vector in C-like syntax.
-
+		
 		Examples:
 		------------
 		Vector4 myVector = Vector4(1, 2, 3, 1);
@@ -791,7 +792,7 @@ private template LinearAlgebra(float_t)
 			v.set(xyz, w);
 			return v;
 		}
-	
+		
 		/** ditto */
 		pure nothrow @safe static Vector4 opCall(float_t[4] p)
 		{
@@ -799,87 +800,7 @@ private template LinearAlgebra(float_t)
 			v.set(p);
 			return v;
 		}
-	
-		/** Sets values of components to passed values. */
-		pure nothrow @safe void set(float_t x, float_t y, float_t z, float_t w)
-		{
-			this.x = x;
-			this.y = y;
-			this.z = z;
-			this.w = w;
-		}
-	
-		/** ditto */
-		pure nothrow @safe void set(Vector3 xyz, float_t w)
-		{
-			this.x = xyz.x;
-			this.y = xyz.y;
-			this.z = xyz.z;
-			this.w = w;
-		}
-	
-		/** ditto */
-		pure nothrow @safe void set(float_t[4] p)
-		{
-			this.x = p[0];
-			this.y = p[1];
-			this.z = p[2];
-			this.w = p[3];
-		}
-	
 		
-
-		/**
-		Returns: Norm (also known as length, magnitude) of vector.
-		
-		W-component is taken into account.
-		*/
-		const pure nothrow @safe @property real norm()
-		{
-			return sqrt(x*x + y*y + z*z + w*w);
-		}
-	
-		/**
-		Returns: Square of vector's norm.
-
-		W-component is taken into account.
-		
-		Since this method doesn't need calculation of square root it is better
-		to use it instead of norm() when you can. For example, if you want just
-		to know which of 2 vectors is longer it's better to compare their norm
-		squares instead of their norm.
-		*/
-		const pure nothrow @safe @property real normSquare()
-		{
-			return x*x + y*y + z*z + w*w;
-		}
-	
-		/** Normalizes this vector. Returns: the original length. */
-		pure nothrow @safe real normalize()
-		{
-			real len = norm();
-			this /= len;
-			return len;
-		}
-	
-		/** Returns: Normalized copy of this vector. */
-		const pure nothrow @safe @property Vector4 normalized()
-		{
-			real n = norm;
-			return Vector4(x / n, y / n, z / n, w / n);
-		}
-	
-		/**
-		Returns: Whether this vector is unit.
-		Params:
-			relprec, absprec = Parameters passed to equal function while comparison of
-							   norm square and 1. Have the same meaning as in equal function.
-		*/
-		const pure nothrow @safe @property bool isUnit(int relprec = defrelprec, int absprec = defabsprec)
-		{
-			return equal( normSquare, 1, relprec, absprec );
-		}
-	
 		/**
 		Returns: Axis for which projection of this vector on it will be longest.
 		
@@ -902,17 +823,62 @@ private template LinearAlgebra(float_t)
 					return (z > w) ? Ort.Z : Ort.W;
 			}
 		}
-	
+		
 		/** Returns: Whether all components are normalized numbers. */
 		const pure nothrow @safe @property bool isNormal()
 		{
 			return std.math.isNormal(x) && std.math.isNormal(y) && std.math.isNormal(z) && std.math.isNormal(w);
 		}
-	
-		/** Returns: float_t pointer to x component of this vector. It's like a _ptr method for arrays. */
-		pure nothrow @safe @property float_t* ptr()
+		
+		/**
+		Returns: Whether this vector is unit.
+		Params:
+			relprec, absprec = Parameters passed to equal function while comparison of
+							   norm square and 1. Have the same meaning as in equal function.
+		*/
+		const pure nothrow @safe @property bool isUnit(int relprec = defrelprec, int absprec = defabsprec)
 		{
-			return cast(float_t*)(&x);
+			return equal( normSquare, 1, relprec, absprec );
+		}
+		
+		/**
+		Returns: Norm (also known as length, magnitude) of vector.
+		
+		W-component is taken into account.
+		*/
+		const pure nothrow @safe @property real norm()
+		{
+			return sqrt(x*x + y*y + z*z + w*w);
+		}
+		
+		/** Normalizes this vector. Returns: the original length. */
+		pure nothrow @safe real normalize()
+		{
+			real len = norm();
+			this /= len;
+			return len;
+		}
+		
+		/** Returns: Normalized copy of this vector. */
+		const pure nothrow @safe @property Vector4 normalized()
+		{
+			real n = norm;
+			return Vector4(x / n, y / n, z / n, w / n);
+		}
+		
+		/**
+		Returns: Square of vector's norm.
+		
+		W-component is taken into account.
+		
+		Since this method doesn't need calculation of square root it is better
+		to use it instead of norm() when you can. For example, if you want just
+		to know which of 2 vectors is longer it's better to compare their norm
+		squares instead of their norm.
+		*/
+		const pure nothrow @safe @property real normSquare()
+		{
+			return x*x + y*y + z*z + w*w;
 		}
 		
 		/** Returns: Component corresponded to passed index. */
@@ -922,7 +888,7 @@ private template LinearAlgebra(float_t)
 		{
 			return ptr[cast(int)ort];
 		}
-	
+		
 		/** Assigns new value to component corresponded to passed index. */
 		pure @safe void opIndexAssign(float_t value, size_t ort)
 		in { assert(ort <= Ort.W); }
@@ -930,7 +896,7 @@ private template LinearAlgebra(float_t)
 		{
 			ptr[cast(int)ort] = value;
 		}
-	
+		
 		/**
 		Standard operators that have intuitive meaning, same as in classical math.
 		
@@ -942,19 +908,19 @@ private template LinearAlgebra(float_t)
 		{
 			return x == v.x && y == v.y && z == v.z && w == v.w;
 		}
-	
+		
 		/** ditto */
 		const pure nothrow @safe Vector4 opNeg()
 		{
 			return Vector4(-x, -y, -z, -w);
 		}
-	
+		
 		/** ditto */
 		const pure nothrow @safe Vector4 opAdd(Vector4 v)
 		{
 			return Vector4(x + v.x, y + v.y, z + v.z, w + v.w);
 		}
-	
+		
 		/** ditto */
 		pure nothrow @safe void opAddAssign(Vector4 v)
 		{
@@ -963,13 +929,13 @@ private template LinearAlgebra(float_t)
 			z += v.z;
 			w += v.w;
 		}
-	
+		
 		/** ditto */
 		const pure nothrow @safe Vector4 opSub(Vector4 v)
 		{
 			return Vector4(x - v.x, y - v.y, z - v.z, w - v.w);
 		}
-	
+		
 		/** ditto */
 		pure nothrow @safe void opSubAssign(Vector4 v)
 		{
@@ -978,13 +944,13 @@ private template LinearAlgebra(float_t)
 			z -= v.z;
 			w -= v.w;
 		}
-	
+		
 		/** ditto */
 		const pure nothrow @safe Vector4 opMul(real k)
 		{
 			return Vector4(x * k, y * k, z * k, w * k);
 		}
-	
+		
 		/** ditto */
 		pure nothrow @safe void opMulAssign(real k)
 		{
@@ -993,19 +959,19 @@ private template LinearAlgebra(float_t)
 			z *= k;
 			w *= k;
 		}
-	
+		
 		/** ditto */
 		const pure nothrow @safe Vector4 opMul_r(real k)
 		{
 			return Vector4(x * k, y * k, z * k, w * k);
 		}
-	
+		
 		/** ditto */
 		const pure nothrow @safe Vector4 opDiv(real k)
 		{
 			return Vector4(x / k, y / k, z / k, w / k);
 		}
-	
+		
 		/** ditto */
 		pure nothrow @safe void opDivAssign(real k)
 		{
@@ -1014,7 +980,43 @@ private template LinearAlgebra(float_t)
 			z /= k;
 			w /= k;
 		}
-	
+		
+		/** Returns: float_t pointer to x component of this vector. It's like a _ptr method for arrays. */
+		pure nothrow @safe @property float_t* ptr()
+		{
+			return cast(float_t*)(&x);
+		}
+		
+		/** Sets values of components to passed values. */
+		pure nothrow @safe void set(float_t x, float_t y, float_t z, float_t w)
+		{
+			this.x = x;
+			this.y = y;
+			this.z = z;
+			this.w = w;
+		}
+		
+		/** ditto */
+		pure nothrow @safe void set(Vector3 xyz, float_t w)
+		{
+			this.x = xyz.x;
+			this.y = xyz.y;
+			this.z = xyz.z;
+			this.w = w;
+		}
+		
+		/** ditto */
+		pure nothrow @safe void set(float_t[4] p)
+		{
+			this.x = p[0];
+			this.y = p[1];
+			this.z = p[2];
+			this.w = p[3];
+		}
+		
+		/** Returns: String representation. */
+		const string toString() { return format("[",x,", ",y,", ", z, ", ", w, "]"); }
+		
 		/** Returns: Copy of this vector with float type components */
 		const pure nothrow @safe Vector4f toVector4f()
 		{
@@ -1032,21 +1034,25 @@ private template LinearAlgebra(float_t)
 		{
 			return Vector4r(cast(real)x, cast(real)y, cast(real)z, cast(real)w);
 		}
-	
+		
 		/**
 		Routine known as swizzling.
 		Returns:
 			Vector3 that has the same x, y, z components values.
 		*/
-		const pure nothrow @safe @property Vector3 xyz()   { return Vector3(x,y,z); }    
+		const pure nothrow @safe @property Vector2 xy()		{ return Vector2(x, y); }
+		const pure nothrow @safe @property Vector2 xz()		{ return Vector2(x, z); }	/// ditto
+		const pure nothrow @safe @property Vector2 yz()		{ return Vector2(y, z); }	/// ditto
+		const pure nothrow @safe @property Vector3 xyz()	{ return Vector3(x,y,z); }	/// ditto
 		
 		/**
 		Routine known as swizzling.
 		Assigns new values to x, y, z components corresponding to argument's components values.
 		*/
-		pure nothrow @safe @property void xyz(Vector3 v)    { x = v.x; y = v.y; z = v.z; }        
-
-		const string toString() { return format("[",x,", ",y,", ", z, ", ", w, "]"); }
+		pure nothrow @safe @property void xy(Vector2 val)	{ x = val.x; y = val.y; }
+		pure nothrow @safe @property void xz(Vector2 val)	{ x = val.x; z = val.y; }				/// ditto
+		pure nothrow @safe @property void yz(Vector2 val)	{ y = val.x; z = val.y; }				/// ditto
+		pure nothrow @safe @property void xyz(Vector3 val)	{ x = val.x; y = val.y; z = val.z; }	/// ditto
 	}
 	
 	/** Returns: Dot product between passed vectors. */
@@ -1063,13 +1069,13 @@ private template LinearAlgebra(float_t)
 						 a.z * b.x,  a.z * b.y,  a.z * b.z, a.z * b.w,
 						 a.w * b.x,  a.w * b.y,  a.w * b.z, a.w * b.w);
 	}
-
+	
 	alias EqualityByNorm!(Vector4).equal equal; /// Introduces approximate equality function for Vector4.
 	alias Lerp!(Vector4).lerp lerp;             /// Introduces linear interpolation function for Vector4.
 	
 	/************************************************************************************
 	_Quaternion.
-
+	
 	For formal definition of quaternion, meaning of possible operations and related
 	information see $(LINK http://en.wikipedia.org/wiki/_Quaternion),
 	$(LINK http://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation).
@@ -1089,7 +1095,7 @@ private template LinearAlgebra(float_t)
 				
 				Vector3 vector; /// Vector part. Can be used instead of explicit members x, y and z.
 			}
-	
+			
 			union
 			{
 				float_t w;      /// Scalar part.
@@ -1102,10 +1108,10 @@ private template LinearAlgebra(float_t)
 			Quaternion identity; /// Identity quaternion.
 			Quaternion nan = { x: float_t.nan, y: float_t.nan, z: float_t.nan, w: float_t.nan }; /// Quaternion with all components set to NaN.
 		}
-	
+		
 		/**
 		Methods to construct quaternion in C-like syntax.
-
+		
 		Examples:
 		------------
 		Quaternion q1 = Quaternion(0, 0, 0, 1);
@@ -1113,15 +1119,15 @@ private template LinearAlgebra(float_t)
 		Quaternion q3 = Quaternion(Matrix33.rotationY(PI / 6), 1);
 		------------
 		*/
-		pure nothrow @safe static Quaternion opCall(float_t x, float_t y, float_t z, float_t w)
+		static pure nothrow @safe Quaternion opCall(float_t x, float_t y, float_t z, float_t w)
 		{
 			Quaternion q;
 			q.set(x, y, z, w);
 			return q;
 		}
-	
+		
 		/** ditto */
-		pure nothrow @safe static Quaternion opCall(Vector3 vector, float_t scalar)
+		static pure nothrow @safe Quaternion opCall(Vector3 vector, float_t scalar)
 		{
 			Quaternion q;
 			q.set(vector, scalar);
@@ -1129,11 +1135,292 @@ private template LinearAlgebra(float_t)
 		}
 		
 		/** ditto */
-		pure @safe static Quaternion opCall(Matrix33 mat)
+		static pure @safe Quaternion opCall(Matrix33 mat)
 		{
 			Quaternion q;
 			q.set(mat);
 			return q;
+		}
+		
+		/** Construct quaternion that represents rotation around corresponding axis. */
+		static pure nothrow @safe Quaternion rotationX(float_t radians)
+		{
+			Quaternion q;
+			
+			float_t s = sin(radians * 0.5f);
+			float_t c = cos(radians * 0.5f);
+			q.x = s;
+			q.y = 0;
+			q.z = 0;
+			q.w = c;
+			
+			return q;
+		}
+		
+		/** ditto */
+		static pure nothrow @safe Quaternion rotationY(float_t radians)
+		{
+			Quaternion q;
+			
+			float_t s = sin(radians * 0.5f);
+			float_t c = cos(radians * 0.5f);
+			q.x = 0;
+			q.y = s;
+			q.z = 0;
+			q.w = c;
+			
+			return q;
+		}
+		
+		/** ditto */
+		static pure nothrow @safe Quaternion rotationZ(float_t radians)
+		{
+			Quaternion q;
+			
+			float_t s = sin(radians * 0.5f);
+			float_t c = cos(radians * 0.5f);
+			q.x = 0;
+			q.y = 0;
+			q.z = s;
+			q.w = c;
+			
+			return q;
+		}
+		
+		/**
+		Constructs quaternion that represents _rotation specified by euler angles passed as arguments.
+		Order of _rotation application is: roll (Z axis), pitch (X axis), yaw (Y axis).
+		*/
+		static pure nothrow @safe Quaternion rotation(float_t yaw, float_t pitch, float_t roll)
+		{
+			return Quaternion.rotationY(yaw) * Quaternion.rotationX(pitch) * Quaternion.rotationZ(roll);
+		}
+		
+		/**
+		Constructs quaternion that represents _rotation around 'axis' _axis by 'radians' angle.
+		*/
+		static pure nothrow @safe Quaternion rotation(Vector3 axis, float_t radians)
+		{
+			Quaternion q;
+			
+			float_t s = sin(radians * 0.5f);
+			float_t c = cos(radians * 0.5f);
+			q.x = axis.x * s;
+			q.y = axis.y * s;
+			q.z = axis.z * s;
+			q.w = c;
+			
+			return q;
+		}
+		
+		/** Returns: Conjugate quaternion. */
+		const pure nothrow @safe @property Quaternion conj()
+		{
+			return Quaternion(-vector, scalar);
+		}
+		
+		/** Returns: Inverse copy of this quaternion. */
+		const pure @safe @property Quaternion inverse()
+		{
+			float_t n = norm();
+			assert( greater(n, 0) );
+			return conj / n;
+		}
+		
+		/** Invert this quaternion. */
+		pure @safe void invert()
+		{
+			float_t n = norm();
+			assert( greater(n, 0) );
+			vector = -vector / n;
+			scalar =  scalar / n;
+		}
+		
+		/** Returns: Whether all components are normalized. */
+		const pure nothrow @safe @property bool isNormal()
+		{
+			return std.math.isNormal(x) && std.math.isNormal(y) && std.math.isNormal(z) && std.math.isNormal(w);
+		}
+		
+		/**
+		Returns: Whether this quaternion is unit.
+		Params:
+			relprec, absprec = Parameters passed to equal function while comparison of
+							   norm square and 1. Have the same meaning as in equal function.
+		*/
+		const pure nothrow @safe @property bool isUnit(int relprec = defrelprec, int absprec = defabsprec)
+		{
+			return equal( normSquare(), 1, relprec, absprec );
+		}
+		
+		/** Returns: Norm (also known as length, magnitude) of quaternion. */
+		const pure nothrow @safe @property real norm()
+		{
+			return sqrt(x*x + y*y + z*z + w*w);
+		}
+		
+		/** Normalizes this quaternion. Returns: the original length. */
+		pure @safe real normalize()
+		{
+			float_t n = norm();
+			assert( greater(n, 0) );
+			this /= n;
+			return n;
+		}
+		
+		/** Returns: Normalized copy of this quaternion. */
+		const pure @safe @property Quaternion normalized()
+		{
+			float_t n = norm();
+			assert( greater(n, 0) );
+			return Quaternion(x / n, y / n, z / n, w / n);
+		}
+		
+		/**
+		Returns: Square of vector's norm.
+		
+		Method doesn't need calculation of square root.
+		*/
+		const pure nothrow @safe @property real normSquare()
+		{
+			return x*x + y*y + z*z + w*w;
+		}
+		
+		/** Returns: Component corresponded to passed index. */
+		pure @safe float_t opIndex(size_t ort)
+		in { assert(ort <= Ort.W); }
+		body
+		{
+			return (cast(float_t*)&this)[cast(int)ort];
+		}
+		
+		/** Assigns new _value to component corresponded to passed index. */
+		pure @safe void opIndexAssign(float_t value, size_t ort)
+		in { assert(ort <= Ort.W); }
+		body
+		{
+			(cast(float_t*)&this)[cast(int)ort] = value;
+		}
+		
+		/**
+		Standard operators that have meaning exactly the same as for Vector4.
+		
+		Note that division operators do no cheks of value of k, so in case of division
+		by 0 result vector will have infinity components. You can check this with isNormal()
+		method.
+		*/
+		const pure nothrow @safe bool opEquals(Quaternion q)
+		{
+			return x == q.x && y == q.y && z == q.z && w == q.w;
+		}
+		
+		/** ditto */
+		const pure nothrow @safe Quaternion opNeg()
+		{
+			return Quaternion(-x, -y, -z, -w);
+		}
+		
+		/** ditto */
+		const pure nothrow @safe Quaternion opAdd(Quaternion q)
+		{
+			return Quaternion(x + q.x, y + q.y, z + q.z, w + q.w);
+		}
+		
+		/** ditto */
+		pure nothrow @safe void opAddAssign(Quaternion q)
+		{
+			x += q.x;
+			y += q.y;
+			z += q.z;
+			w += q.w;
+		}
+		
+		/** ditto */
+		const pure nothrow @safe Quaternion opSub(Quaternion q)
+		{
+			return Quaternion(x - q.x, y - q.y, z - q.z, w - q.w);
+		}
+		
+		/** ditto */
+		pure nothrow @safe void opSubAssign(Quaternion q)
+		{
+			x -= q.x;
+			y -= q.y;
+			z -= q.z;
+			w -= q.w;
+		}
+		
+		/** ditto */
+		const pure nothrow @safe Quaternion opMul(float_t k)
+		{
+			return Quaternion(x * k, y * k, z * k, w * k);
+		}
+		
+		/** ditto */
+		const pure nothrow @safe Quaternion opMul_r(float_t k)
+		{
+			return Quaternion(x * k, y * k, z * k, w * k);
+		}
+		
+		/** ditto */
+		const pure nothrow @safe Quaternion opDiv(float_t k)
+		{
+			return Quaternion(x / k, y / k, z / k, w / k);
+		}
+		
+		/** ditto */
+		pure nothrow @safe void opDivAssign(float_t k)
+		{
+			x /= k;
+			y /= k;
+			z /= k;
+			w /= k;
+		}
+		
+		/**
+		Quaternion multiplication operators. Result of Q1*Q2 is quaternion that represents
+		rotation which has meaning of application Q2's rotation and the Q1's rotation.
+		*/
+		const pure nothrow @safe Quaternion opMul(Quaternion q)
+		{
+			return Quaternion(
+				w * q.x + x * q.w + y * q.z - z * q.y,
+				w * q.y + y * q.w + z * q.x - x * q.z,
+				w * q.z + z * q.w + x * q.y - y * q.x,
+				w * q.w - x * q.x - y * q.y - z * q.z );
+		}
+		
+		/** ditto */
+		pure nothrow @safe void opMulAssign(Quaternion q)
+		{
+			set(w * q.x + x * q.w + y * q.z - z * q.y,
+				w * q.y + y * q.w + z * q.x - x * q.z,
+				w * q.z + z * q.w + x * q.y - y * q.x,
+				w * q.w - x * q.x - y * q.y - z * q.z );
+		}
+		
+		/** Returns: float_t pointer to x component of this vector. It's like a _ptr method for arrays. */
+		pure nothrow @safe @property float_t* ptr()
+		{
+			return cast(float_t*)(&x);
+		}
+		
+		/**
+		Returns: Extracted euler angle with the assumption that rotation is applied in order:
+		_roll (Z axis), _pitch (X axis), _yaw (Y axis).
+		*/
+		const pure nothrow @safe @property real pitch()
+		{
+			return asin(2 * (w*x - y*z));
+		}
+		
+		/**
+		Returns: Extracted euler angle with the assumption that rotation is applied in order:
+		_roll (Z axis), _pitch (X axis), _yaw (Y axis).
+		*/
+		const pure nothrow @safe @property real roll()
+		{
+			return atan2(2 * (w*z + x*y), w*w - x*x + y*y - z*z);
 		}
 		
 		/** Sets values of components according to passed values. */
@@ -1144,7 +1431,7 @@ private template LinearAlgebra(float_t)
 			this.z = z;
 			this.w = w;
 		}
-	
+		
 		/** ditto */
 		pure nothrow @safe void set(Vector3 vector, float_t scalar)
 		{
@@ -1169,7 +1456,7 @@ private template LinearAlgebra(float_t)
 			// Algorithm stolen from OGRE (http://ogre.sourceforge.net)
 			real trace = mat[0, 0] + mat[1, 1] + mat[2, 2];
 			real root;
-		
+			
 			if ( trace > 0 )
 			{
 				// |w| > 1/2, may as well choose w > 1/2
@@ -1199,7 +1486,7 @@ private template LinearAlgebra(float_t)
 				 // User "Helmut Duregger reports this sometimes 
 				 // causes mirroring of rotations, and that Ogre
 				 // actually uses the uncommented version below.
-
+				 
 				 w = (mat[j, k] - mat[k, j]) * root;
 				 *(&x + j) = (mat[i, j] + mat[j, i]) * root;
 				 *(&x + k) = (mat[i, k] + mat[k, i]) * root;
@@ -1207,294 +1494,9 @@ private template LinearAlgebra(float_t)
 				w = (mat[k, j] - mat[j, k]) * root;
 				*(&x + j) = (mat[j, i] + mat[i, j]) * root;
 				*(&x + k) = (mat[k, i] + mat[i, k]) * root;
-
 			}
 		}
 		
-		/** Construct quaternion that represents rotation around corresponding axis. */
-		pure nothrow @safe static Quaternion rotationX(float_t radians)
-		{
-			Quaternion q;
-			
-			float_t s = sin(radians * 0.5f);
-			float_t c = cos(radians * 0.5f);
-			q.x = s;
-			q.y = 0;
-			q.z = 0;
-			q.w = c;
-			
-			return q;
-		}
-	
-		/** ditto */
-		pure nothrow @safe static Quaternion rotationY(float_t radians)
-		{
-			Quaternion q;
-			
-			float_t s = sin(radians * 0.5f);
-			float_t c = cos(radians * 0.5f);
-			q.x = 0;
-			q.y = s;
-			q.z = 0;
-			q.w = c;
-			
-			return q;
-		}
-	
-		/** ditto */
-		pure nothrow @safe static Quaternion rotationZ(float_t radians)
-		{
-			Quaternion q;
-			
-			float_t s = sin(radians * 0.5f);
-			float_t c = cos(radians * 0.5f);
-			q.x = 0;
-			q.y = 0;
-			q.z = s;
-			q.w = c;
-			
-			return q;
-		}
-	
-		/**
-		Constructs quaternion that represents _rotation specified by euler angles passed as arguments.
-		Order of _rotation application is: roll (Z axis), pitch (X axis), yaw (Y axis).
-		*/
-		pure nothrow @safe static Quaternion rotation(float_t yaw, float_t pitch, float_t roll)
-		{
-			return Quaternion.rotationY(yaw) * Quaternion.rotationX(pitch) * Quaternion.rotationZ(roll);
-		}
-	
-		/**
-		Constructs quaternion that represents _rotation around 'axis' _axis by 'radians' angle.
-		*/
-		pure nothrow @safe static Quaternion rotation(Vector3 axis, float_t radians)
-		{
-			Quaternion q;
-			
-			float_t s = sin(radians * 0.5f);
-			float_t c = cos(radians * 0.5f);
-			q.x = axis.x * s;
-			q.y = axis.y * s;
-			q.z = axis.z * s;
-			q.w = c;
-			
-			return q;
-		}
-	
-		/** Returns: Norm (also known as length, magnitude) of quaternion. */
-		const pure nothrow @safe @property real norm()
-		{
-			return sqrt(x*x + y*y + z*z + w*w);
-		}
-	
-		/**
-		Returns: Square of vector's norm.
-		
-		Method doesn't need calculation of square root.
-		*/
-		const pure nothrow @safe @property real normSquare()
-		{
-			return x*x + y*y + z*z + w*w;
-		}
-	
-		/** Normalizes this quaternion. Returns: the original length. */
-		pure @safe real normalize()
-		{
-			float_t n = norm();
-			assert( greater(n, 0) );
-			this /= n;
-			return n;
-		}
-	
-		/** Returns: Normalized copy of this quaternion. */
-		const pure @safe @property Quaternion normalized()
-		{
-			float_t n = norm();
-			assert( greater(n, 0) );
-			return Quaternion(x / n, y / n, z / n, w / n);
-		}
-	
-		/**
-		Returns: Whether this quaternion is unit.
-		Params:
-			relprec, absprec = Parameters passed to equal function while comparison of
-							   norm square and 1. Have the same meaning as in equal function.
-		*/
-		const pure nothrow @safe @property bool isUnit(int relprec = defrelprec, int absprec = defabsprec)
-		{
-			return equal( normSquare(), 1, relprec, absprec );
-		}
-	
-		/** Returns: Conjugate quaternion. */
-		const pure nothrow @safe @property Quaternion conj()
-		{
-			return Quaternion(-vector, scalar);
-		}
-	
-		/** Invert this quaternion. */
-		pure @safe void invert()
-		{
-			float_t n = norm();
-			assert( greater(n, 0) );
-			vector = -vector / n;
-			scalar =  scalar / n;
-		}
-	
-		/** Returns: Inverse copy of this quaternion. */
-		const pure @safe @property Quaternion inverse()
-		{
-			float_t n = norm();
-			assert( greater(n, 0) );
-			return conj / n;
-		}
-		
-		/**
-		Returns: Extracted euler angle with the assumption that rotation is applied in order:
-		_roll (Z axis), _pitch (X axis), _yaw (Y axis).
-		*/
-		const pure nothrow @safe @property real yaw()
-		{
-			return atan2(2 * (w*y + x*z), w*w - x*x - y*y + z*z);
-		}
-	
-		/** ditto */
-		const pure nothrow @safe @property real pitch()
-		{
-			return asin(2 * (w*x - y*z));
-		}
-		
-		/** ditto */
-		const pure nothrow @safe @property real roll()
-		{
-			return atan2(2 * (w*z + x*y), w*w - x*x + y*y - z*z);
-		}
-		
-		/** Returns: Whether all components are normalized. */
-		const pure nothrow @safe @property bool isNormal()
-		{
-			return std.math.isNormal(x) && std.math.isNormal(y) && std.math.isNormal(z) && std.math.isNormal(w);
-		}
-	
-		/** Returns: float_t pointer to x component of this vector. It's like a _ptr method for arrays. */
-		pure nothrow @safe @property float_t* ptr()
-		{
-			return cast(float_t*)(&x);
-		}
-	
-		/** Returns: Component corresponded to passed index. */
-		pure @safe float_t opIndex(size_t ort)
-		in { assert(ort <= Ort.W); }
-		body
-		{
-			return (cast(float_t*)&this)[cast(int)ort];
-		}
-	
-		/** Assigns new _value to component corresponded to passed index. */
-		pure @safe void opIndexAssign(float_t value, size_t ort)
-		in { assert(ort <= Ort.W); }
-		body
-		{
-			(cast(float_t*)&this)[cast(int)ort] = value;
-		}
-	
-		/**
-		Standard operators that have meaning exactly the same as for Vector4.
-		
-		Note that division operators do no cheks of value of k, so in case of division
-		by 0 result vector will have infinity components. You can check this with isNormal()
-		method.
-		*/
-		const pure nothrow @safe bool opEquals(Quaternion q)
-		{
-			return x == q.x && y == q.y && z == q.z && w == q.w;
-		}
-	
-		/** ditto */
-		const pure nothrow @safe Quaternion opNeg()
-		{
-			return Quaternion(-x, -y, -z, -w);
-		}
-	
-		/** ditto */
-		const pure nothrow @safe Quaternion opAdd(Quaternion q)
-		{
-			return Quaternion(x + q.x, y + q.y, z + q.z, w + q.w);
-		}
-	
-		/** ditto */
-		pure nothrow @safe void opAddAssign(Quaternion q)
-		{
-			x += q.x;
-			y += q.y;
-			z += q.z;
-			w += q.w;
-		}
-	
-		/** ditto */
-		const pure nothrow @safe Quaternion opSub(Quaternion q)
-		{
-			return Quaternion(x - q.x, y - q.y, z - q.z, w - q.w);
-		}
-	
-		/** ditto */
-		pure nothrow @safe void opSubAssign(Quaternion q)
-		{
-			x -= q.x;
-			y -= q.y;
-			z -= q.z;
-			w -= q.w;
-		}
-	
-		/** ditto */
-		const pure nothrow @safe Quaternion opMul(float_t k)
-		{
-			return Quaternion(x * k, y * k, z * k, w * k);
-		}
-
-		/** ditto */
-		const pure nothrow @safe Quaternion opMul_r(float_t k)
-		{
-			return Quaternion(x * k, y * k, z * k, w * k);
-		}
-	
-		/** ditto */
-		const pure nothrow @safe Quaternion opDiv(float_t k)
-		{
-			return Quaternion(x / k, y / k, z / k, w / k);
-		}
-	
-		/** ditto */
-		pure nothrow @safe void opDivAssign(float_t k)
-		{
-			x /= k;
-			y /= k;
-			z /= k;
-			w /= k;
-		}
-	
-		/**
-		Quaternion multiplication operators. Result of Q1*Q2 is quaternion that represents
-		rotation which has meaning of application Q2's rotation and the Q1's rotation.
-		*/
-		const pure nothrow @safe Quaternion opMul(Quaternion q)
-		{
-			return Quaternion(
-				w * q.x + x * q.w + y * q.z - z * q.y,
-				w * q.y + y * q.w + z * q.x - x * q.z,
-				w * q.z + z * q.w + x * q.y - y * q.x,
-				w * q.w - x * q.x - y * q.y - z * q.z );
-		}
-		
-		/** ditto */
-		pure nothrow @safe void opMulAssign(Quaternion q)
-		{
-			set(w * q.x + x * q.w + y * q.z - z * q.y,
-				w * q.y + y * q.w + z * q.x - x * q.z,
-				w * q.z + z * q.w + x * q.y - y * q.x,
-				w * q.w - x * q.x - y * q.y - z * q.z );
-		}
-	
 		/** Returns: Copy of this quaternion with float type components. */
 		const pure nothrow @safe Quaternionf toQuaternionf()
 		{
@@ -1512,8 +1514,18 @@ private template LinearAlgebra(float_t)
 		{
 			return Quaternionr(cast(real)x, cast(real)y, cast(real)z, cast(real)w);
 		}
-
+	
+		/** Returns: String representation. */
 		const string toString() { return format("[",x,", ",y,", ", z, ", ", w, "]"); }
+		
+		/**
+		Returns: Extracted euler angle with the assumption that rotation is applied in order:
+		_roll (Z axis), _pitch (X axis), _yaw (Y axis).
+		*/
+		const pure nothrow @safe @property real yaw()
+		{
+			return atan2(2 * (w*y + x*z), w*w - x*x - y*y + z*z);
+		}
 	}   
 	
 	alias EqualityByNorm!(Quaternion).equal equal;  /// Introduces approximate equality function for Quaternion.
@@ -1529,10 +1541,10 @@ private template LinearAlgebra(float_t)
 	{
 		real cosTheta = q0.x * q1.x + q0.y * q1.y + q0.z * q1.z + q0.w * q1.w;
 		real theta = acos(cosTheta);
-	
+		
 		if ( equal(fabs(theta), 0) )
 			return lerp(q0, q1, t);
-	
+		
 		real sinTheta = sin(theta);
 		real coeff0 = sin((1 - t) * theta) / sinTheta;
 		real coeff1 = sin(t * theta) / sinTheta;
@@ -1551,7 +1563,7 @@ private template LinearAlgebra(float_t)
 	
 	/************************************************************************************
 	2x2 Matrix.
-
+	
 	$(LINK http://en.wikipedia.org/wiki/Transformation_matrix).
 	*************************************************************************************/
 	struct Matrix22
@@ -1563,12 +1575,12 @@ private template LinearAlgebra(float_t)
 				float_t m00, m10;
 				float_t m01, m11;
 			}
-	
+			
 			float_t[2][2] m;
 			Vector2[2]    v;
 			float_t[4]    a;
 		}
-	
+		
 		static immutable
 		{
 			/// Identity matrix.
@@ -1584,19 +1596,19 @@ private template LinearAlgebra(float_t)
 				0, 0,
 				0, 0 };
 		}
-	
+		
 		/**
 		Methods to construct matrix in C-like syntax.
-
+		
 		In case with array remember about column-major matrix memory layout,
 		note last line with assert in example.
-
+		
 		Examples:
 		------------
 		Matrix22 mat1 = Matrix22(1,2,3,4);
 		static float[9] a = [1,2,3,4];
 		Matrix22 mat2 = Matrix22(a);
-
+		
 		assert(mat1 == mat2.transposed);
 		------------
 		*/
@@ -1610,7 +1622,7 @@ private template LinearAlgebra(float_t)
 		}
 		
 		/** ditto */
-		pure @safe static Matrix22 opCall(float_t[4] a)
+		static pure @safe Matrix22 opCall(float_t[4] a)
 		{
 			Matrix22 mat;
 			mat.a[0..4] = a[0..4].dup;
@@ -1621,110 +1633,16 @@ private template LinearAlgebra(float_t)
 		Method to construct matrix in C-like syntax. Sets columns to passed vector
 		arguments.
 		*/
-		pure nothrow @safe static Matrix22 opCall(Vector2 basisX, Vector2 basisY)
+		static pure nothrow @safe Matrix22 opCall(Vector2 basisX, Vector2 basisY)
 		{
 			Matrix22 mat;
 			mat.v[0] = basisX;
 			mat.v[1] = basisY;
 			return mat;
 		}
-	
-		/** Sets elements to passed values. */
-		pure nothrow @safe void set(float_t m00, float_t m01,
-				 float_t m10, float_t m11)
-		{
-			this.m00 = m00;        this.m01 = m01;
-			this.m10 = m10;        this.m11 = m11;
-		}
 		
-		/** Sets elements as _a copy of a contents. Remember about column-major matrix memory layout. */
-		pure @safe void set(float_t[4] a)
-		{
-			this.a[0..4] = a[0..4].dup;
-		}
-		
-		/** Sets columns to passed basis vectors. */
-		pure nothrow @safe void set(Vector2 basisX, Vector2 basisY)
-		{
-			v[0] = basisX;
-			v[1] = basisY;
-		}
-		
-		/** Returns: Whether all components are normalized numbers. */
-		const pure nothrow @safe @property bool isNormal()
-		{
-			return
-				std.math.isNormal(m00) && std.math.isNormal(m01) &&
-				std.math.isNormal(m10) && std.math.isNormal(m11);
-		}
-		
-		/**
-		Returns: Whether this matrix is identity.
-		Params:
-			relprec, absprec = Parameters passed to equal function while calculations.
-							   Have the same meaning as in equal function.
-		*/
-		const pure nothrow @safe @property bool isIdentity(int relprec = defrelprec, int absprec = defabsprec)
-		{
-			return equal(this, identity, relprec, absprec);
-		}
-		
-		/**
-		Returns: Whether this matrix is zero.
-		Params:
-			relprec, absprec = Parameters passed to equal function while calculations.
-							   Have the same meaning as in equal function.
-		*/
-		const pure nothrow @safe @property bool isZero(int relprec = defrelprec, int absprec = defabsprec)
-		{
-			return equal(normSquare, 0, relprec, absprec);
-		}
-		
-		/**
-		Returns: Whether this matrix is orthogonal.
-		Params:
-			relprec, absprec = Parameters passed to equal function while calculations.
-							   Have the same meaning as in equal function.
-		References:
-			$(LINK http://en.wikipedia.org/wiki/Orthogonal_matrix).
-		*/
-		const pure nothrow @safe @property bool isOrthogonal(int relprec = defrelprec, int absprec = defabsprec)
-		{
-			return equal(abs(cross(v[0],v[1])), 1.0, relprec, absprec);
-		}
-		
-		/**
-		Returns: Whether this matrix represents pure rotation. I.e. hasn't scale admixture.
-		Params:
-			relprec, absprec = Parameters passed to equal function while calculations.
-							   Have the same meaning as in equal function.
-		*/
-		const pure nothrow @safe @property bool isRotation(int relprec = defrelprec, int absprec = defabsprec)
-		{
-			return isOrthogonal(relprec, absprec);
-		}
-	
-		/** Constructs _scale matrix with _scale coefficients specified as arguments. */
-		pure nothrow @safe static Matrix22 scale(float_t x, float_t y)
-		{
-			Matrix22 mat = identity;
-			with (mat)
-			{
-				m00 = x;
-				m11 = y;
-			}
-	
-			return mat;
-		}
-	
-		/** Constructs _scale matrix with _scale coefficients specified as v's components. */
-		pure nothrow @safe static Matrix22 scale(Vector2 v)
-		{
-			return scale(v.x, v.y);
-		}
-	
 		/** Construct matrix that represents rotation. */
-		pure nothrow @safe static Matrix22 rotation(float_t radians)
+		static pure nothrow @safe Matrix22 rotation(float_t radians)
 		{
 			Matrix22 mat = identity;
 			float_t c = cos(radians);
@@ -1735,11 +1653,11 @@ private template LinearAlgebra(float_t)
 				m10 = s;
 				m01 = -s;
 			}
-	
+			
 			return mat;
 		}
-	
-	
+		
+		/+
 		/**
 		Constructs matrix that represents _rotation same as in passed in complex number q.
 		Method works with assumption that q is unit.
@@ -1747,7 +1665,6 @@ private template LinearAlgebra(float_t)
 			AssertError on non-unit quaternion call attempt if you compile with
 			contract checks enabled.
 		*/
-/*
 		static Matrix22 rotation(complex q)
 		in { assert( q.isUnit ); }
 		body
@@ -1775,7 +1692,33 @@ private template LinearAlgebra(float_t)
 			
 			return mat;
 		}
-*/        
+		+/
+		
+		/** Constructs _scale matrix with _scale coefficients specified as arguments. */
+		static pure nothrow @safe Matrix22 scale(float_t x, float_t y)
+		{
+			Matrix22 mat = identity;
+			with (mat)
+			{
+				m00 = x;
+				m11 = y;
+			}
+			
+			return mat;
+		}
+		
+		/** Constructs _scale matrix with _scale coefficients specified as v's components. */
+		static pure nothrow @safe Matrix22 scale(Vector2 v)
+		{
+			return scale(v.x, v.y);
+		}
+		
+		/** Returns: Determinant */
+		const pure nothrow @safe @property real determinant()
+		{
+			return m00 * m11 - m10 * m01;
+		}
+		
 		/**
 		Returns: Inverse copy of this matrix.
 		
@@ -1790,12 +1733,12 @@ private template LinearAlgebra(float_t)
 			mat.m01 = -m01;
 			mat.m10 = -m10;
 			mat.m11 =  m00;
-
+			
 			real det = m00 * m11 - m01 * m10;
 			
 			for (int i = 4; i--; )
 				mat.a[i] /= det;
-	
+			
 			return mat;
 		}
 		
@@ -1814,10 +1757,58 @@ private template LinearAlgebra(float_t)
 			this *= idet;
 		}
 		
-		/** Returns: Determinant */
-		const pure nothrow @safe @property real determinant()
+		/**
+		Returns: Whether this matrix is identity.
+		Params:
+			relprec, absprec = Parameters passed to equal function while calculations.
+							   Have the same meaning as in equal function.
+		*/
+		const pure nothrow @safe @property bool isIdentity(int relprec = defrelprec, int absprec = defabsprec)
 		{
-			return m00 * m11 - m10 * m01;
+			return equal(this, identity, relprec, absprec);
+		}
+		
+		/** Returns: Whether all components are normalized numbers. */
+		const pure nothrow @safe @property bool isNormal()
+		{
+			return
+				std.math.isNormal(m00) && std.math.isNormal(m01) &&
+				std.math.isNormal(m10) && std.math.isNormal(m11);
+		}
+		
+		/**
+		Returns: Whether this matrix is orthogonal.
+		Params:
+			relprec, absprec = Parameters passed to equal function while calculations.
+							   Have the same meaning as in equal function.
+		References:
+			$(LINK http://en.wikipedia.org/wiki/Orthogonal_matrix).
+		*/
+		const pure nothrow @safe @property bool isOrthogonal(int relprec = defrelprec, int absprec = defabsprec)
+		{
+			return equal(abs(cross(v[0],v[1])), 1.0, relprec, absprec);
+		}
+		
+		/**
+		Returns: Whether this matrix represents pure rotation. I.e. hasn't scale admixture.
+		Params:
+			relprec, absprec = Parameters passed to equal function while calculations.
+							   Have the same meaning as in equal function.
+		*/
+		const pure nothrow @safe @property bool isRotation(int relprec = defrelprec, int absprec = defabsprec)
+		{
+			return isOrthogonal(relprec, absprec);
+		}
+		
+		/**
+		Returns: Whether this matrix is zero.
+		Params:
+			relprec, absprec = Parameters passed to equal function while calculations.
+							   Have the same meaning as in equal function.
+		*/
+		const pure nothrow @safe @property bool isZero(int relprec = defrelprec, int absprec = defabsprec)
+		{
+			return equal(normSquare, 0, relprec, absprec);
 		}
 		
 		/**
@@ -1832,9 +1823,9 @@ private template LinearAlgebra(float_t)
 		
 		/**
 		Returns: Square of Frobenius _norm of matrix. I.e. sum of all elements' squares.
-
+		
 		Method doesn't need calculation of square root.
-
+		
 		References:
 			$(LINK http://en.wikipedia.org/wiki/Frobenius_norm#Frobenius_norm).
 		*/
@@ -1850,18 +1841,140 @@ private template LinearAlgebra(float_t)
 			return ret;
 		}
 		
-		/** Transposes this matrix. */
-		pure nothrow @safe void transpose()
+		/**
+		Standard operators that have intuitive meaning, same as in classical math.
+		
+		Note that division operators do no cheks of value of k, so in case of division
+		by 0 result matrix will have infinity components. You can check this with isNormal()
+		method.
+		*/
+		const pure nothrow @safe Matrix22 opNeg()
 		{
-			swap(m01, m10);
+			return Matrix22(-m00, -m01,
+							-m10, -m11);
 		}
 		
-		/** Returns: Transposed copy of this matrix. */
-		const pure nothrow @safe @property Matrix22 transposed()
+		/** ditto */
+		const pure nothrow @safe Matrix22 opAdd(Matrix22 mat)
+		{
+			return Matrix22(m00 + mat.m00, m01 + mat.m01,
+							m10 + mat.m10, m11 + mat.m11);
+		}
+		
+		/** ditto */
+		pure nothrow @safe void opAddAssign(Matrix22 mat)
+		{
+			m00 += mat.m00; m01 += mat.m01;
+			m10 += mat.m10; m11 += mat.m11;
+		}
+		
+		/** ditto */
+		const pure nothrow @safe Matrix22 opSub(Matrix22 mat)
+		{
+			return Matrix22(m00 - mat.m00, m01 - mat.m01,
+							m10 - mat.m10, m11 - mat.m11);
+		}
+		
+		/** ditto */
+		pure nothrow @safe void opSubAssign(Matrix22 mat)
+		{
+			m00 -= mat.m00; m01 -= mat.m01;
+			m10 -= mat.m10; m11 -= mat.m11;
+		}
+		
+		/** ditto */
+		const pure nothrow @safe Matrix22 opMul(float_t k)
+		{
+			return Matrix22(m00 * k, m01 * k,
+							m10 * k, m11 * k);
+		}
+		
+		/** ditto */
+		pure nothrow @safe void opMulAssign(float_t k)
+		{
+			m00 *= k; m01 *= k;
+			m10 *= k; m11 *= k;
+		}
+		
+		/** ditto */
+		const pure nothrow @safe Matrix22 opMul_r(float_t k)
+		{
+			return Matrix22(m00 * k, m01 * k,
+							m10 * k, m11 * k);
+		}
+		
+		/** ditto */
+		const pure nothrow @safe Matrix22 opDiv(float_t k)
+		{
+			return Matrix22(m00 / k, m01 / k,
+							m10 / k, m11 / k);
+		}
+		
+		/** ditto */
+		pure nothrow @safe void opDivAssign(float_t k)
+		{
+			m00 /= k; m01 /= k;
+			m10 /= k; m11 /= k;
+		}
+		
+		/** ditto */
+		const pure nothrow @safe bool opEquals(Matrix22 mat)
+		{
+			return m00 == mat.m00 && m01 == mat.m01 &&
+				   m10 == mat.m10 && m11 == mat.m11;
+		}
+		
+		/** ditto */
+		const pure nothrow @safe Matrix22 opMul(Matrix22 mat)
 		{
 			return Matrix22(
-				m00, m10,
-				m01, m11 );
+				m00 * mat.m00 + m01 * mat.m10,   m00 * mat.m01 + m01 * mat.m11,
+				m10 * mat.m00 + m11 * mat.m10,   m10 * mat.m01 + m11 * mat.m11 );
+		}
+		
+		/** ditto */
+		pure nothrow @safe void opMulAssign(Matrix22 mat)
+		{
+			this = this * mat;
+		}
+		
+		/** ditto */
+		const pure nothrow @safe Vector2 opMul(Vector2 v)
+		{
+			return Vector2(v.x * m00 + v.y * m01,
+						   v.x * m10 + v.y * m11 );
+		}
+		
+		/** Returns: Element at row'th _row and col'th column. */
+		pure @safe float_t opIndex(uint row, uint col)
+		in { assert( row < 2 && col < 2 ); }
+		body
+		{
+			return m[col][row];
+		}
+		
+		/** Assigns value f to element at row'th _row and col'th column. */
+		pure @safe void opIndexAssign(float_t f, uint row, uint col)
+		in { assert( row < 2 && col < 2 ); }
+		body
+		{
+			m[col][row] = f;
+		}
+		
+		/** Returns: Vector representing col'th column. */
+		pure @safe Vector2 opIndex(uint col)
+		in { assert( col < 2 ); }
+		body
+		{
+			return v[col];
+		}
+		
+		/** Replaces elements in col'th column with v's values. */
+		pure @safe Vector2 opIndexAssign(Vector2 v, uint col)
+		in { assert( col < 2 ); }
+		body
+		{
+			return this.v[col] = v;
 		}
 		
 		/**
@@ -1878,7 +1991,7 @@ private template LinearAlgebra(float_t)
 				Argument shouldn't be null.
 			S = Output matrix, will be symmetric non-negative definite after
 				decomposition. Argument shouldn't be null.
-
+		
 		Examples:
 		--------
 		Matrix22 Q, S;
@@ -1888,7 +2001,7 @@ private template LinearAlgebra(float_t)
 		composition.polarDecomposition(Q, S);    
 		assert( equal(Q * S, composition) );
 		--------
-
+		
 		References:
 			$(LINK http://www.cs.wisc.edu/graphics/Courses/cs-838-2002/Papers/polar-decomp.pdf)
 		*/
@@ -1919,143 +2032,7 @@ private template LinearAlgebra(float_t)
 			
 			S = Q.transposed * this;
 		}
-	
-		/**
-		Standard operators that have intuitive meaning, same as in classical math.
 		
-		Note that division operators do no cheks of value of k, so in case of division
-		by 0 result matrix will have infinity components. You can check this with isNormal()
-		method.
-		*/
-		const pure nothrow @safe Matrix22 opNeg()
-		{
-			return Matrix22(-m00, -m01,
-							-m10, -m11);
-		}
-	
-		/** ditto */
-		const pure nothrow @safe Matrix22 opAdd(Matrix22 mat)
-		{
-			return Matrix22(m00 + mat.m00, m01 + mat.m01,
-							m10 + mat.m10, m11 + mat.m11);
-		}
-	
-		/** ditto */
-		pure nothrow @safe void opAddAssign(Matrix22 mat)
-		{
-			m00 += mat.m00; m01 += mat.m01;
-			m10 += mat.m10; m11 += mat.m11;
-		}
-	
-		/** ditto */
-		const pure nothrow @safe Matrix22 opSub(Matrix22 mat)
-		{
-			return Matrix22(m00 - mat.m00, m01 - mat.m01,
-							m10 - mat.m10, m11 - mat.m11);
-		}
-	
-		/** ditto */
-		pure nothrow @safe void opSubAssign(Matrix22 mat)
-		{
-			m00 -= mat.m00; m01 -= mat.m01;
-			m10 -= mat.m10; m11 -= mat.m11;
-		}
-	
-		/** ditto */
-		const pure nothrow @safe Matrix22 opMul(float_t k)
-		{
-			return Matrix22(m00 * k, m01 * k,
-							m10 * k, m11 * k);
-		}
-	
-		/** ditto */
-		pure nothrow @safe void opMulAssign(float_t k)
-		{
-			m00 *= k; m01 *= k;
-			m10 *= k; m11 *= k;
-		}
-	
-		/** ditto */
-		const pure nothrow @safe Matrix22 opMul_r(float_t k)
-		{
-			return Matrix22(m00 * k, m01 * k,
-							m10 * k, m11 * k);
-		}
-	
-		/** ditto */
-		const pure nothrow @safe Matrix22 opDiv(float_t k)
-		{
-			return Matrix22(m00 / k, m01 / k,
-							m10 / k, m11 / k);
-		}
-	
-		/** ditto */
-		pure nothrow @safe void opDivAssign(float_t k)
-		{
-			m00 /= k; m01 /= k;
-			m10 /= k; m11 /= k;
-		}
-	
-		/** ditto */
-		const pure nothrow @safe bool opEquals(Matrix22 mat)
-		{
-			return m00 == mat.m00 && m01 == mat.m01 &&
-				   m10 == mat.m10 && m11 == mat.m11;
-		}
-
-		/** ditto */
-		const pure nothrow @safe Matrix22 opMul(Matrix22 mat)
-		{
-			return Matrix22(
-				m00 * mat.m00 + m01 * mat.m10,   m00 * mat.m01 + m01 * mat.m11,
-				m10 * mat.m00 + m11 * mat.m10,   m10 * mat.m01 + m11 * mat.m11 );
-		}
-	
-		/** ditto */
-		pure nothrow @safe void opMulAssign(Matrix22 mat)
-		{
-			this = this * mat;
-		}
-	
-		/** ditto */
-		const pure nothrow @safe Vector2 opMul(Vector2 v)
-		{
-			return Vector2(v.x * m00 + v.y * m01,
-						   v.x * m10 + v.y * m11 );
-		}
-	
-		/** Returns: Element at row'th _row and col'th column. */
-		pure @safe float_t opIndex(uint row, uint col)
-		in { assert( row < 2 && col < 2 ); }
-		body
-		{
-			return m[col][row];
-		}
-	
-		/** Assigns value f to element at row'th _row and col'th column. */
-		pure @safe void opIndexAssign(float_t f, uint row, uint col)
-		in { assert( row < 2 && col < 2 ); }
-		body
-		{
-			m[col][row] = f;
-		}
-		
-		/** Returns: Vector representing col'th column. */
-		pure @safe Vector2 opIndex(uint col)
-		in { assert( col < 2 ); }
-		body
-		{
-			return v[col];
-		}
-		
-		/** Replaces elements in col'th column with v's values. */
-		pure @safe Vector2 opIndexAssign(Vector2 v, uint col)
-		in { assert( col < 2 ); }
-		body
-		{
-			return this.v[col] = v;
-		}
-	
 		/**
 		Returns: float_t pointer to [0,0] element of this matrix. It's like a _ptr method for arrays.
 		
@@ -2064,6 +2041,27 @@ private template LinearAlgebra(float_t)
 		pure nothrow @safe @property float_t* ptr()
 		{
 			return a.ptr;
+		}
+		
+		/** Sets elements to passed values. */
+		pure nothrow @safe void set(float_t m00, float_t m01,
+				 float_t m10, float_t m11)
+		{
+			this.m00 = m00;        this.m01 = m01;
+			this.m10 = m10;        this.m11 = m11;
+		}
+		
+		/** Sets elements as _a copy of a contents. Remember about column-major matrix memory layout. */
+		pure @safe void set(float_t[4] a)
+		{
+			this.a[0..4] = a[0..4].dup;
+		}
+		
+		/** Sets columns to passed basis vectors. */
+		pure nothrow @safe void set(Vector2 basisX, Vector2 basisY)
+		{
+			v[0] = basisX;
+			v[1] = basisY;
 		}
 		
 		/** Returns: Copy of this matrix with float type elements. */
@@ -2089,20 +2087,34 @@ private template LinearAlgebra(float_t)
 				cast(real)m00, cast(real)m01,
 				cast(real)m10, cast(real)m11     );
 		}
-
+		
+		/** Returns: String representation. */
 		const string toString() { 
 			return format("[" ,m00, ", " ,m01, ",\n",
 						  " " ,m10, ", " ,m11, "]");
 		}
+		
+		/** Transposes this matrix. */
+		pure nothrow @safe void transpose()
+		{
+			swap(m01, m10);
+		}
+		
+		/** Returns: Transposed copy of this matrix. */
+		const pure nothrow @safe @property Matrix22 transposed()
+		{
+			return Matrix22(
+				m00, m10,
+				m01, m11 );
+		}
 	}
-	
 	
 	alias EqualityByNorm!(Matrix22).equal equal; /// Introduces approximate equality function for Matrix22.
 	alias Lerp!(Matrix22).lerp lerp;             /// Introduces linear interpolation function for Matrix22.
-
+	
 	/************************************************************************************
 	3x3 Matrix.
-
+	
 	For formal definition of quaternion, meaning of possible operations and related
 	information see $(LINK http://en.wikipedia.org/wiki/Matrix(mathematics)),
 	$(LINK http://en.wikipedia.org/wiki/Transformation_matrix).
@@ -2117,15 +2129,15 @@ private template LinearAlgebra(float_t)
 				float_t m01, m11, m21;
 				float_t m02, m12, m22;
 			}
-	
+			
 			float_t[3][3] m;
 			Vector3[3]    v;
 			float_t[9]    a;
 		}
-	
-		/// Identity matrix.
+		
 		static immutable
 		{
+			/// Identity matrix.
 			Matrix33 identity = {
 				1, 0, 0,
 				0, 1, 0,
@@ -2141,23 +2153,23 @@ private template LinearAlgebra(float_t)
 				0, 0, 0,
 				0, 0, 0 };
 		}
-	
+		
 		/**
 		Methods to construct matrix in C-like syntax.
-
+		
 		In case with array remember about column-major matrix memory layout,
 		note last line with assert in example.
-
+		
 		Examples:
 		------------
 		Matrix33 mat1 = Matrix33(1,2,3,4,5,6,7,8,9);
 		static float[9] a = [1,2,3,4,5,6,7,8,9];
 		Matrix33 mat2 = Matrix33(a);
-
+		
 		assert(mat1 == mat2.transposed);
 		------------
 		*/
-		pure nothrow @safe static Matrix33 opCall(float_t m00, float_t m01, float_t m02,
+		static pure nothrow @safe Matrix33 opCall(float_t m00, float_t m01, float_t m02,
 							   float_t m10, float_t m11, float_t m12,
 							   float_t m20, float_t m21, float_t m22)
 		{
@@ -2169,7 +2181,7 @@ private template LinearAlgebra(float_t)
 		}
 		
 		/** ditto */
-		pure @safe static Matrix33 opCall(float_t[9] a)
+		static pure @safe Matrix33 opCall(float_t[9] a)
 		{
 			Matrix33 mat;
 			mat.a[0..9] = a[0..9].dup;
@@ -2180,7 +2192,7 @@ private template LinearAlgebra(float_t)
 		Method to construct matrix in C-like syntax. Sets columns to passed vector
 		arguments.
 		*/
-		pure nothrow @safe static Matrix33 opCall(Vector3 basisX, Vector3 basisY, Vector3 basisZ)
+		static pure nothrow @safe Matrix33 opCall(Vector3 basisX, Vector3 basisY, Vector3 basisZ)
 		{
 			Matrix33 mat;
 			mat.v[0] = basisX;
@@ -2188,163 +2200,16 @@ private template LinearAlgebra(float_t)
 			mat.v[2] = basisZ;
 			return mat;
 		}
-	
-		/** Sets elements to passed values. */
-		pure nothrow @safe void set(float_t m00, float_t m01, float_t m02,
-				 float_t m10, float_t m11, float_t m12,
-				 float_t m20, float_t m21, float_t m22)
-		{
-			this.m00 = m00;        this.m01 = m01;        this.m02 = m02;
-			this.m10 = m10;        this.m11 = m11;        this.m12 = m12;
-			this.m20 = m20;        this.m21 = m21;        this.m22 = m22;
-		}
 		
-		/** Sets elements as _a copy of a contents. Remember about column-major matrix memory layout. */
-		pure @safe void set(float_t[9] a)
-		{
-			this.a[0..9] = a[0..9].dup;
-		}
-		
-		/** Sets columns to passed basis vectors. */
-		pure nothrow @safe void set(Vector3 basisX, Vector3 basisY, Vector3 basisZ)
-		{
-			v[0] = basisX;
-			v[1] = basisY;
-			v[2] = basisZ;
-		}
-		
-		/** Returns: Whether all components are normalized numbers. */
-		const pure nothrow @safe @property bool isNormal()
-		{
-			return
-				std.math.isNormal(m00) && std.math.isNormal(m01) && std.math.isNormal(m02) &&
-				std.math.isNormal(m10) && std.math.isNormal(m11) && std.math.isNormal(m12) &&
-				std.math.isNormal(m20) && std.math.isNormal(m21) && std.math.isNormal(m22);
-		}
-		
-		/**
-		Returns: Whether this matrix is identity.
-		Params:
-			relprec, absprec = Parameters passed to equal function while calculations.
-							   Have the same meaning as in equal function.
-		*/
-		const pure nothrow @safe @property bool isIdentity(int relprec = defrelprec, int absprec = defabsprec)
-		{
-			return equal(this, identity, relprec, absprec);
-		}
-		
-		/**
-		Returns: Whether this matrix is zero.
-		Params:
-			relprec, absprec = Parameters passed to equal function while calculations.
-							   Have the same meaning as in equal function.
-		*/
-		const pure nothrow @safe @property bool isZero(int relprec = defrelprec, int absprec = defabsprec)
-		{
-			return equal(normSquare(), 0, relprec, absprec);
-		}
-		
-		/**
-		Returns: Whether this matrix is orthogonal.
-		Params:
-			relprec, absprec = Parameters passed to equal function while calculations.
-							   Have the same meaning as in equal function.
-		References:
-			$(LINK http://en.wikipedia.org/wiki/Orthogonal_matrix).
-		*/
-		const pure nothrow @safe @property bool isOrthogonal(int relprec = defrelprec, int absprec = defabsprec)
-		{
-			return isBasisOrthonormal(v[0], v[1], v[2], relprec, absprec);
-		}
-		
-		/**
-		Returns: Whether this matrix represents pure rotation. I.e. hasn't scale admixture.
-		Params:
-			relprec, absprec = Parameters passed to equal function while calculations.
-							   Have the same meaning as in equal function.
-		*/
-		const pure nothrow @safe @property bool isRotation(int relprec = defrelprec, int absprec = defabsprec)
-		{
-			return isOrthogonal(relprec, absprec) && equal(v[2], cross(v[0], v[1]), relprec, absprec);
-		}
-	
-		/** Constructs _scale matrix with _scale coefficients specified as arguments. */
-		pure nothrow @safe static Matrix33 scale(float_t sx, float_t sy, float_t sz)
-		{
-			Matrix33 mat = identity;
-			with (mat)
-			{
-				m00 = sx;
-				m11 = sy;
-				m22 = sz;
-			}
-	
-			return mat;
-		}
-	
-		/** Constructs _scale matrix with _scale coefficients specified as v's components. */
-		pure nothrow @safe static Matrix33 scale(Vector3 v)
-		{
-			return scale(v.x, v.y, v.z);
-		}
-	
-		/** Construct matrix that represents rotation around corresponding axis. */
-		pure nothrow @safe static Matrix33 rotationX(float_t radians)
-		{
-			Matrix33 mat = identity;
-			float_t c = cos(radians);
-			float_t s = sin(radians);
-			with (mat)
-			{
-				m11 = m22 = c;
-				m21 = s;
-				m12 = -s;            
-			}
-	
-			return mat;
-		}
-	
-		/** ditto */
-		pure nothrow @safe static Matrix33 rotationY(float_t radians)
-		{
-			Matrix33 mat = identity;
-			float_t c = cos(radians);
-			float_t s = sin(radians);
-			with (mat)
-			{
-				m00 = m22 = c;
-				m20 = -s;
-				m02 = s;            
-			}
-	
-			return mat;
-		}
-	
-		/** ditto */
-		pure nothrow @safe static Matrix33 rotationZ(float_t radians)
-		{
-			Matrix33 mat = identity;
-			float_t c = cos(radians);
-			float_t s = sin(radians);
-			with (mat)
-			{
-				m00 = m11 = c;
-				m10 = s;
-				m01 = -s;            
-			}
-	
-			return mat;
-		}
-	
 		/**
 		Constructs matrix that represents _rotation specified by euler angles passed as arguments.
 		Order of _rotation application is: roll (Z axis), pitch (X axis), yaw (Y axis).
 		*/
-		pure nothrow @safe static Matrix33 rotation(float_t yaw, float_t pitch, float_t roll)
+		static pure nothrow @safe Matrix33 rotation(float_t yaw, float_t pitch, float_t roll)
 		{
 			return Matrix33.rotationY(yaw) * Matrix33.rotationX(pitch) * Matrix33.rotationZ(roll);
 		}
-	
+		
 		/**
 		Constructs matrix that represents _rotation specified by axis and angle.
 		Method works with assumption that axis is unit vector.        
@@ -2352,7 +2217,7 @@ private template LinearAlgebra(float_t)
 			AssertError on non-unit axis call attempt if module was compiled with
 			contract checks enabled.
 		*/
-		pure @safe static Matrix33 rotation(Vector3 axis, float_t radians)
+		static pure @safe Matrix33 rotation(Vector3 axis, float_t radians)
 		in { assert( axis.isUnit ); }
 		body
 		{
@@ -2368,7 +2233,7 @@ private template LinearAlgebra(float_t)
 			real xs = axis.x * s;
 			real ys = axis.y * s;
 			real zs = axis.z * s;
-	
+			
 			Matrix33 mat;
 			with (mat)
 			{
@@ -2376,7 +2241,7 @@ private template LinearAlgebra(float_t)
 				m10 = xycc + zs;        m11 = y2 * cc + c;      m12 = yzcc - xs;
 				m20 = xzcc - ys;        m21 = yzcc + xs;        m22 = z2 * cc + c;
 			}
-	
+			
 			return mat;
 		}
 		
@@ -2387,7 +2252,7 @@ private template LinearAlgebra(float_t)
 			AssertError on non-unit quaternion call attempt if you compile with
 			contract checks enabled.
 		*/
-		pure @safe static Matrix33 rotation(Quaternion q)
+		static pure @safe Matrix33 rotation(Quaternion q)
 		in { assert( q.isUnit ); }
 		body
 		{
@@ -2415,18 +2280,110 @@ private template LinearAlgebra(float_t)
 			return mat;
 		}
 		
+		/** Construct matrix that represents rotation around corresponding axis. */
+		static pure nothrow @safe Matrix33 rotationX(float_t radians)
+		{
+			Matrix33 mat = identity;
+			float_t c = cos(radians);
+			float_t s = sin(radians);
+			with (mat)
+			{
+				m11 = m22 = c;
+				m21 = s;
+				m12 = -s;            
+			}
+			
+			return mat;
+		}
+		
+		/** ditto */
+		static pure nothrow @safe Matrix33 rotationY(float_t radians)
+		{
+			Matrix33 mat = identity;
+			float_t c = cos(radians);
+			float_t s = sin(radians);
+			with (mat)
+			{
+				m00 = m22 = c;
+				m20 = -s;
+				m02 = s;            
+			}
+			
+			return mat;
+		}
+		
+		/** ditto */
+		static pure nothrow @safe Matrix33 rotationZ(float_t radians)
+		{
+			Matrix33 mat = identity;
+			float_t c = cos(radians);
+			float_t s = sin(radians);
+			with (mat)
+			{
+				m00 = m11 = c;
+				m10 = s;
+				m01 = -s;            
+			}
+			
+			return mat;
+		}
+		
+		/** Constructs _scale matrix with _scale coefficients specified as arguments. */
+		static pure nothrow @safe Matrix33 scale(float_t sx, float_t sy, float_t sz)
+		{
+			Matrix33 mat = identity;
+			with (mat)
+			{
+				m00 = sx;
+				m11 = sy;
+				m22 = sz;
+			}
+			
+			return mat;
+		}
+		
+		/** Constructs _scale matrix with _scale coefficients specified as v's components. */
+		static pure nothrow @safe Matrix33 scale(Vector3 v)
+		{
+			return scale(v.x, v.y, v.z);
+		}
+		
 		/** Constructs _translation matrix with offset values specified as arguments. */
-		pure nothrow @safe static Matrix33 translation(float_t x, float_t y)
+		static pure nothrow @safe Matrix33 translation(float_t x, float_t y)
 		{
 			return Matrix33(1, 0, x,
 							0, 1, y,
 							0, 0, 1);
 		}
-	
+		
 		/** Constructs _translation matrix with offset values specified as v's components. */
-		pure nothrow @safe static Matrix33 translation(Vector2 v)
+		static pure nothrow @safe Matrix33 translation(Vector2 v)
 		{
 			return translation(v.x, v.y);
+		}
+		
+		/** R/W property. Corner 2x2 minor. */
+		const pure nothrow @safe @property Matrix22 cornerMinor()
+		{
+			return Matrix22(m00, m01,
+							m10, m11);
+		}
+		
+		/** ditto */
+		pure nothrow @safe @property void cornerMinor(Matrix22 mat)
+		{
+			m00 = mat.m00;        m01 = mat.m01;
+			m10 = mat.m10;        m11 = mat.m11;
+		}
+		
+		/** Returns: Determinant */
+		const pure nothrow @safe @property real determinant()
+		{
+			real cofactor00 = m11 * m22 - m12 * m21;
+			real cofactor10 = m12 * m20 - m10 * m22;
+			real cofactor20 = m10 * m21 - m11 * m20;
+			
+			return m00 * cofactor00 + m01 * cofactor10 + m02 * cofactor20;
 		}
 		
 		/**
@@ -2453,7 +2410,7 @@ private template LinearAlgebra(float_t)
 			
 			for (int i = 9; i--; )
 				mat.a[i] /= det;
-	
+			
 			return mat;
 		}
 		
@@ -2468,14 +2425,69 @@ private template LinearAlgebra(float_t)
 			this = inverse();
 		}
 		
-		/** Returns: Determinant */
-		const pure nothrow @safe @property real determinant()
+		/** 
+		Returns: Whether this matrix represents affine transformation.
+		References:
+			$(LINK http://en.wikipedia.org/wiki/Affine_transformation).
+		*/
+		const pure nothrow @safe @property bool isAffine()
 		{
-			real cofactor00 = m11 * m22 - m12 * m21;
-			real cofactor10 = m12 * m20 - m10 * m22;
-			real cofactor20 = m10 * m21 - m11 * m20;
+			return equal(m20, 0) && equal(m21, 0) && equal(m22, 1);
+		}
+		
+		/**
+		Returns: Whether this matrix is identity.
+		Params:
+			relprec, absprec = Parameters passed to equal function while calculations.
+							   Have the same meaning as in equal function.
+		*/
+		const pure nothrow @safe @property bool isIdentity(int relprec = defrelprec, int absprec = defabsprec)
+		{
+			return equal(this, identity, relprec, absprec);
+		}
 			
-			return m00 * cofactor00 + m01 * cofactor10 + m02 * cofactor20;
+		/** Returns: Whether all components are normalized numbers. */
+		const pure nothrow @safe @property bool isNormal()
+		{
+			return
+				std.math.isNormal(m00) && std.math.isNormal(m01) && std.math.isNormal(m02) &&
+				std.math.isNormal(m10) && std.math.isNormal(m11) && std.math.isNormal(m12) &&
+				std.math.isNormal(m20) && std.math.isNormal(m21) && std.math.isNormal(m22);
+		}
+		
+		/**
+		Returns: Whether this matrix is orthogonal.
+		Params:
+			relprec, absprec = Parameters passed to equal function while calculations.
+							   Have the same meaning as in equal function.
+		References:
+			$(LINK http://en.wikipedia.org/wiki/Orthogonal_matrix).
+		*/
+		const pure nothrow @safe @property bool isOrthogonal(int relprec = defrelprec, int absprec = defabsprec)
+		{
+			return isBasisOrthonormal(v[0], v[1], v[2], relprec, absprec);
+		}
+		
+		/**
+		Returns: Whether this matrix represents pure rotation. I.e. hasn't scale admixture.
+		Params:
+			relprec, absprec = Parameters passed to equal function while calculations.
+							   Have the same meaning as in equal function.
+		*/
+		const pure nothrow @safe @property bool isRotation(int relprec = defrelprec, int absprec = defabsprec)
+		{
+			return isOrthogonal(relprec, absprec) && equal(v[2], cross(v[0], v[1]), relprec, absprec);
+		}
+		
+		/**
+		Returns: Whether this matrix is zero.
+		Params:
+			relprec, absprec = Parameters passed to equal function while calculations.
+							   Have the same meaning as in equal function.
+		*/
+		const pure nothrow @safe @property bool isZero(int relprec = defrelprec, int absprec = defabsprec)
+		{
+			return equal(normSquare(), 0, relprec, absprec);
 		}
 		
 		/**
@@ -2490,9 +2502,9 @@ private template LinearAlgebra(float_t)
 		
 		/**
 		Returns: Square of Frobenius _norm of matrix. I.e. sum of all elements' squares.
-
+		
 		Method doesn't need calculation of square root.
-
+		
 		References:
 			$(LINK http://en.wikipedia.org/wiki/Frobenius_norm#Frobenius_norm).
 		*/
@@ -2508,48 +2520,160 @@ private template LinearAlgebra(float_t)
 			return ret;
 		}
 		
-		/** Transposes this matrix. */
-		pure nothrow @safe void transpose()
-		{
-			/*           */        swap(m01, m10);        swap(m02, m20);
-			/*           */        /*           */        swap(m12, m21);
-			/*           */        /*           */        /*           */
-		}
+		/**
+		Standard operators that have intuitive meaning, same as in classical math.
 		
-		/** Returns: Transposed copy of this matrix. */
-		const pure nothrow @safe @property Matrix33 transposed()
+		Note that division operators do no cheks of value of k, so in case of division
+		by 0 result matrix will have infinity components. You can check this with isNormal()
+		method.
+		*/
+		const pure nothrow @safe Matrix33 opNeg()
 		{
-			return Matrix33(
-				m00, m10, m20,
-				m01, m11, m21,
-				m02, m12, m22 );
-		}
-		
-		/** R/W property. Corner 2x2 minor. */
-		const pure nothrow @safe @property Matrix22 cornerMinor()
-		{
-			return Matrix22(m00, m01,
-							m10, m11);
+			return Matrix33(-m00, -m01, -m02,
+							-m10, -m11, -m12,
+							-m20, -m21, -m22);
 		}
 		
 		/** ditto */
-		pure nothrow @safe @property void cornerMinor(Matrix22 mat)
+		const pure nothrow @safe Matrix33 opAdd(Matrix33 mat)
 		{
-			m00 = mat.m00;        m01 = mat.m01;
-			m10 = mat.m10;        m11 = mat.m11;
+			return Matrix33(m00 + mat.m00, m01 + mat.m01, m02 + mat.m02,
+							m10 + mat.m10, m11 + mat.m11, m12 + mat.m12,
+							m20 + mat.m20, m21 + mat.m21, m22 + mat.m22);
 		}
 		
-		const pure nothrow @safe @property float_t x()		{ return m02; }
-		const pure nothrow @safe @property float_t y()		{ return m12; }
-		const pure nothrow @safe @property float_t w()		{ return m22; }
-		const pure nothrow @safe @property Vector2 xy()		{ return Vector2(m02, m12); }
-		const pure nothrow @safe @property Vector3 xyw()	{ return Vector3(m02, m12, m22); }
+		/** ditto */
+		pure nothrow @safe void opAddAssign(Matrix33 mat)
+		{
+			m00 += mat.m00; m01 += mat.m01; m02 += mat.m02;
+			m10 += mat.m10; m11 += mat.m11; m12 += mat.m12;
+			m20 += mat.m20; m21 += mat.m21; m22 += mat.m22;
+		}
 		
-		pure nothrow @safe @property void x(float_t val)	{ m02 = val; }
-		pure nothrow @safe @property void y(float_t val)	{ m12 = val; }
-		pure nothrow @safe @property void w(float_t val)	{ m22 = val; }
-		pure nothrow @safe @property void xy(Vector2 val)	{ m02 = val.x; m12 = val.y; }
-		pure nothrow @safe @property void xyw(Vector3 val)	{ m02 = val.x; m12 = val.y; m22 = val.z; }
+		/** ditto */
+		const pure nothrow @safe Matrix33 opSub(Matrix33 mat)
+		{
+			return Matrix33(m00 - mat.m00, m01 - mat.m01, m02 - mat.m02,
+							m10 - mat.m10, m11 - mat.m11, m12 - mat.m12,
+							m20 - mat.m20, m21 - mat.m21, m22 - mat.m22);
+		}
+		
+		/** ditto */
+		pure nothrow @safe void opSubAssign(Matrix33 mat)
+		{
+			m00 -= mat.m00; m01 -= mat.m01; m02 -= mat.m02;
+			m10 -= mat.m10; m11 -= mat.m11; m12 -= mat.m12;
+			m20 -= mat.m20; m21 -= mat.m21; m22 -= mat.m22;        
+		}
+		
+		/** ditto */
+		const pure nothrow @safe Matrix33 opMul(float_t k)
+		{
+			return Matrix33(m00 * k, m01 * k, m02 * k,
+							m10 * k, m11 * k, m12 * k,
+							m20 * k, m21 * k, m22 * k);
+		}
+		
+		/** ditto */
+		pure nothrow @safe void opMulAssign(float_t k)
+		{
+			m00 *= k; m01 *= k; m02 *= k;
+			m10 *= k; m11 *= k; m12 *= k;
+			m20 *= k; m21 *= k; m22 *= k;
+		}
+		
+		/** ditto */
+		const pure nothrow @safe Matrix33 opMul_r(float_t k)
+		{
+			return Matrix33(m00 * k, m01 * k, m02 * k,
+							m10 * k, m11 * k, m12 * k,
+							m20 * k, m21 * k, m22 * k);
+		}
+		
+		/** ditto */
+		const pure nothrow @safe Matrix33 opDiv(float_t k)
+		{
+			
+			return Matrix33(m00 / k, m01 / k, m02 / k,
+							m10 / k, m11 / k, m12 / k,
+							m20 / k, m21 / k, m22 / k);
+		}
+		
+		/** ditto */
+		pure nothrow @safe void opDivAssign(float_t k)
+		{
+			m00 /= k; m01 /= k; m02 /= k;
+			m10 /= k; m11 /= k; m12 /= k;
+			m20 /= k; m21 /= k; m22 /= k;
+		}
+		
+		/** ditto */
+		const pure nothrow @safe bool opEquals(Matrix33 mat)
+		{
+			return m00 == mat.m00 && m01 == mat.m01 && m02 == mat.m02 &&
+				   m10 == mat.m10 && m11 == mat.m11 && m12 == mat.m12 &&
+				   m20 == mat.m20 && m21 == mat.m21 && m22 == mat.m22;
+		}
+		
+		/** ditto */
+		const pure nothrow @safe Matrix33 opMul(Matrix33 mat)
+		{
+			return Matrix33(m00 * mat.m00 + m01 * mat.m10 + m02 * mat.m20,
+							m00 * mat.m01 + m01 * mat.m11 + m02 * mat.m21,
+							m00 * mat.m02 + m01 * mat.m12 + m02 * mat.m22,
+							m10 * mat.m00 + m11 * mat.m10 + m12 * mat.m20,
+							m10 * mat.m01 + m11 * mat.m11 + m12 * mat.m21,
+							m10 * mat.m02 + m11 * mat.m12 + m12 * mat.m22,
+							m20 * mat.m00 + m21 * mat.m10 + m22 * mat.m20,
+							m20 * mat.m01 + m21 * mat.m11 + m22 * mat.m21,
+							m20 * mat.m02 + m21 * mat.m12 + m22 * mat.m22 );
+		}
+		
+		/** ditto */
+		pure nothrow @safe void opMulAssign(Matrix33 mat)
+		{
+			this = this * mat;
+		}
+		
+		/** ditto */
+		const pure nothrow @safe Vector3 opMul(Vector3 v)
+		{
+			return Vector3(v.x * m00 + v.y * m01 + v.z * m02,
+						   v.x * m10 + v.y * m11 + v.z * m12,
+						   v.x * m20 + v.y * m21 + v.z * m22 );
+		}
+		
+		/** Returns: Element at row'th _row and col'th column. */
+		const pure @safe float_t opIndex(uint row, uint col)
+		in { assert( row < 3 && col < 3 ); }
+		body
+		{
+			return m[col][row];
+		}
+		
+		/** Assigns value f to element at row'th _row and col'th column. */
+		pure @safe void opIndexAssign(float_t f, uint row, uint col)
+		in { assert( row < 3 && col < 3 ); }
+		body
+		{
+			m[col][row] = f;
+		}
+		
+		/** Returns: Vector representing col'th column. */
+		const pure @safe Vector3 opIndex(uint col)
+		in { assert( col < 3 ); }
+		body
+		{
+			return v[col];
+		}
+		
+		/** Replaces elements in col'th column with v's values. */
+		pure @safe Vector3 opIndexAssign(Vector3 v, uint col)
+		in { assert( col < 3 ); }
+		body
+		{
+			return this.v[col] = v;
+		}
 		
 		/**
 		Makes polar decomposition of this matrix. Denote this matrix with 'M', in
@@ -2565,7 +2689,7 @@ private template LinearAlgebra(float_t)
 				Argument shouldn't be null.
 			S = Output matrix, will be symmetric non-negative definite after
 				decomposition. Argument shouldn't be null.
-
+		
 		Examples:
 		--------
 		Matrix33 Q, S;
@@ -2575,7 +2699,7 @@ private template LinearAlgebra(float_t)
 		composition.polarDecomposition(Q, S);    
 		assert( equal(Q * S, composition) );
 		--------
-
+		
 		References:
 			$(LINK http://www.cs.wisc.edu/graphics/Courses/cs-838-2002/Papers/polar-decomp.pdf)
 		*/
@@ -2605,162 +2729,7 @@ private template LinearAlgebra(float_t)
 			
 			S = Q.transposed * this;
 		}
-	
-		/**
-		Standard operators that have intuitive meaning, same as in classical math.
 		
-		Note that division operators do no cheks of value of k, so in case of division
-		by 0 result matrix will have infinity components. You can check this with isNormal()
-		method.
-		*/
-		const pure nothrow @safe Matrix33 opNeg()
-		{
-			return Matrix33(-m00, -m01, -m02,
-							-m10, -m11, -m12,
-							-m20, -m21, -m22);
-		}
-	
-		/** ditto */
-		const pure nothrow @safe Matrix33 opAdd(Matrix33 mat)
-		{
-			return Matrix33(m00 + mat.m00, m01 + mat.m01, m02 + mat.m02,
-							m10 + mat.m10, m11 + mat.m11, m12 + mat.m12,
-							m20 + mat.m20, m21 + mat.m21, m22 + mat.m22);
-		}
-	
-		/** ditto */
-		pure nothrow @safe void opAddAssign(Matrix33 mat)
-		{
-			m00 += mat.m00; m01 += mat.m01; m02 += mat.m02;
-			m10 += mat.m10; m11 += mat.m11; m12 += mat.m12;
-			m20 += mat.m20; m21 += mat.m21; m22 += mat.m22;
-		}
-	
-		/** ditto */
-		const pure nothrow @safe Matrix33 opSub(Matrix33 mat)
-		{
-			return Matrix33(m00 - mat.m00, m01 - mat.m01, m02 - mat.m02,
-							m10 - mat.m10, m11 - mat.m11, m12 - mat.m12,
-							m20 - mat.m20, m21 - mat.m21, m22 - mat.m22);
-		}
-	
-		/** ditto */
-		pure nothrow @safe void opSubAssign(Matrix33 mat)
-		{
-			m00 -= mat.m00; m01 -= mat.m01; m02 -= mat.m02;
-			m10 -= mat.m10; m11 -= mat.m11; m12 -= mat.m12;
-			m20 -= mat.m20; m21 -= mat.m21; m22 -= mat.m22;        
-		}
-	
-		/** ditto */
-		const pure nothrow @safe Matrix33 opMul(float_t k)
-		{
-			return Matrix33(m00 * k, m01 * k, m02 * k,
-							m10 * k, m11 * k, m12 * k,
-							m20 * k, m21 * k, m22 * k);
-		}
-	
-		/** ditto */
-		pure nothrow @safe void opMulAssign(float_t k)
-		{
-			m00 *= k; m01 *= k; m02 *= k;
-			m10 *= k; m11 *= k; m12 *= k;
-			m20 *= k; m21 *= k; m22 *= k;
-		}
-	
-		/** ditto */
-		const pure nothrow @safe Matrix33 opMul_r(float_t k)
-		{
-			return Matrix33(m00 * k, m01 * k, m02 * k,
-							m10 * k, m11 * k, m12 * k,
-							m20 * k, m21 * k, m22 * k);
-		}
-	
-		/** ditto */
-		const pure nothrow @safe Matrix33 opDiv(float_t k)
-		{
-			
-			return Matrix33(m00 / k, m01 / k, m02 / k,
-							m10 / k, m11 / k, m12 / k,
-							m20 / k, m21 / k, m22 / k);
-		}
-	
-		/** ditto */
-		pure nothrow @safe void opDivAssign(float_t k)
-		{
-			m00 /= k; m01 /= k; m02 /= k;
-			m10 /= k; m11 /= k; m12 /= k;
-			m20 /= k; m21 /= k; m22 /= k;
-		}
-	
-		/** ditto */
-		const pure nothrow @safe bool opEquals(Matrix33 mat)
-		{
-			return m00 == mat.m00 && m01 == mat.m01 && m02 == mat.m02 &&
-				   m10 == mat.m10 && m11 == mat.m11 && m12 == mat.m12 &&
-				   m20 == mat.m20 && m21 == mat.m21 && m22 == mat.m22;
-		}
-
-		/** ditto */
-		const pure nothrow @safe Matrix33 opMul(Matrix33 mat)
-		{
-			return Matrix33(m00 * mat.m00 + m01 * mat.m10 + m02 * mat.m20,
-							m00 * mat.m01 + m01 * mat.m11 + m02 * mat.m21,
-							m00 * mat.m02 + m01 * mat.m12 + m02 * mat.m22,
-							m10 * mat.m00 + m11 * mat.m10 + m12 * mat.m20,
-							m10 * mat.m01 + m11 * mat.m11 + m12 * mat.m21,
-							m10 * mat.m02 + m11 * mat.m12 + m12 * mat.m22,
-							m20 * mat.m00 + m21 * mat.m10 + m22 * mat.m20,
-							m20 * mat.m01 + m21 * mat.m11 + m22 * mat.m21,
-							m20 * mat.m02 + m21 * mat.m12 + m22 * mat.m22 );
-		}
-	
-		/** ditto */
-		pure nothrow @safe void opMulAssign(Matrix33 mat)
-		{
-			this = this * mat;
-		}
-	
-		/** ditto */
-		const pure nothrow @safe Vector3 opMul(Vector3 v)
-		{
-			return Vector3(v.x * m00 + v.y * m01 + v.z * m02,
-						   v.x * m10 + v.y * m11 + v.z * m12,
-						   v.x * m20 + v.y * m21 + v.z * m22 );
-		}
-	
-		/** Returns: Element at row'th _row and col'th column. */
-		const pure @safe float_t opIndex(uint row, uint col)
-		in { assert( row < 3 && col < 3 ); }
-		body
-		{
-			return m[col][row];
-		}
-	
-		/** Assigns value f to element at row'th _row and col'th column. */
-		pure @safe void opIndexAssign(float_t f, uint row, uint col)
-		in { assert( row < 3 && col < 3 ); }
-		body
-		{
-			m[col][row] = f;
-		}
-		
-		/** Returns: Vector representing col'th column. */
-		const pure @safe Vector3 opIndex(uint col)
-		in { assert( col < 3 ); }
-		body
-		{
-			return v[col];
-		}
-		
-		/** Replaces elements in col'th column with v's values. */
-		pure @safe Vector3 opIndexAssign(Vector3 v, uint col)
-		in { assert( col < 3 ); }
-		body
-		{
-			return this.v[col] = v;
-		}
-	
 		/**
 		Returns: float_t pointer to [0,0] element of this matrix. It's like a _ptr method for arrays.
 		
@@ -2769,6 +2738,30 @@ private template LinearAlgebra(float_t)
 		pure nothrow @safe @property float_t* ptr()
 		{
 			return a.ptr;
+		}
+		
+		/** Sets elements to passed values. */
+		pure nothrow @safe void set(float_t m00, float_t m01, float_t m02,
+				 float_t m10, float_t m11, float_t m12,
+				 float_t m20, float_t m21, float_t m22)
+		{
+			this.m00 = m00;        this.m01 = m01;        this.m02 = m02;
+			this.m10 = m10;        this.m11 = m11;        this.m12 = m12;
+			this.m20 = m20;        this.m21 = m21;        this.m22 = m22;
+		}
+		
+		/** Sets elements as _a copy of a contents. Remember about column-major matrix memory layout. */
+		pure @safe void set(float_t[9] a)
+		{
+			this.a[0..9] = a[0..9].dup;
+		}
+		
+		/** Sets columns to passed basis vectors. */
+		pure nothrow @safe void set(Vector3 basisX, Vector3 basisY, Vector3 basisZ)
+		{
+			v[0] = basisX;
+			v[1] = basisY;
+			v[2] = basisZ;
 		}
 		
 		/** Returns: Copy of this matrix with float type elements. */
@@ -2797,21 +2790,60 @@ private template LinearAlgebra(float_t)
 				cast(real)m10, cast(real)m11, cast(real)m12,
 				cast(real)m20, cast(real)m21, cast(real)m22 );
 		}
-
+		
+		/** Returns: String representation. */
 		const string toString() { 
 			return format("[" ,m00, ", " ,m01, ", " ,m02, ",\n",
 						  " " ,m10, ", " ,m11, ", " ,m12, ",\n",
 						  " " ,m20, ", " ,m21, ", " ,m22, "]");
 		}
+		
+		/** Transposes this matrix. */
+		pure nothrow @safe void transpose()
+		{
+			/*           */        swap(m01, m10);        swap(m02, m20);
+			/*           */        /*           */        swap(m12, m21);
+			/*           */        /*           */        /*           */
+		}
+		
+		/** Returns: Transposed copy of this matrix. */
+		const pure nothrow @safe @property Matrix33 transposed()
+		{
+			return Matrix33(
+				m00, m10, m20,
+				m01, m11, m21,
+				m02, m12, m22 );
+		}
+		
+		/**
+		Routines known as swizzling.
+		Returns:
+			New vector constructed from this one and having component values
+			that correspond to method name.
+		*/
+		const pure nothrow @safe @property float_t x()		{ return m02; }
+		const pure nothrow @safe @property float_t y()		{ return m12; } /// ditto
+		const pure nothrow @safe @property float_t w()		{ return m22; } /// ditto
+		const pure nothrow @safe @property Vector2 xy()		{ return Vector2(m02, m12); } /// ditto
+		const pure nothrow @safe @property Vector3 xyw()	{ return Vector3(m02, m12, m22); } /// ditto
+		
+		/**
+		Routines known as swizzling.
+		Assigns new values to some components corresponding to method name.
+		*/
+		pure nothrow @safe @property void x(float_t val)	{ m02 = val; }
+		pure nothrow @safe @property void y(float_t val)	{ m12 = val; } /// ditto
+		pure nothrow @safe @property void w(float_t val)	{ m22 = val; } /// ditto
+		pure nothrow @safe @property void xy(Vector2 val)	{ m02 = val.x; m12 = val.y; } /// ditto
+		pure nothrow @safe @property void xyw(Vector3 val)	{ m02 = val.x; m12 = val.y; m22 = val.z; } /// ditto
 	}
-	
 	
 	alias EqualityByNorm!(Matrix33).equal equal; /// Introduces approximate equality function for Matrix33.
 	alias Lerp!(Matrix33).lerp lerp;             /// Introduces linear interpolation function for Matrix33.
 	
 	/************************************************************************************
 	4x4 Matrix.
-
+	
 	Helix matrices uses column-major memory layout.
 	*************************************************************************************/
 	struct Matrix44
@@ -2825,15 +2857,15 @@ private template LinearAlgebra(float_t)
 				float_t m02, m12, m22, m32;
 				float_t m03, m13, m23, m33;
 			}
-	
+			
 			float_t[4][4] m;
 			float_t[16]   a;
 			Vector4[4]    v;
 		}
-	
-		/// Identity matrix.
+		
 		static immutable
 		{
+			/// Identity matrix.
 			Matrix44 identity = {
 				1, 0, 0, 0,
 				0, 1, 0, 0,
@@ -2852,13 +2884,13 @@ private template LinearAlgebra(float_t)
 				0, 0, 0, 0,
 				0, 0, 0, 0 };
 		}
-	
+		
 		/**
 		Methods to construct matrix in C-like syntax.
-
+		
 		In case with array remember about column-major matrix memory layout,
 		note last line with assert in example - it'll be passed.
-
+		
 		Examples:
 		------------
 		Matrix33 mat1 = Matrix33(
@@ -2873,11 +2905,11 @@ private template LinearAlgebra(float_t)
 			 9, 10, 11, 12,
 			13, 14, 15, 16 ];
 		Matrix33 mat2 = Matrix33(a);
-
+		
 		assert(mat1 == mat2.transposed);
 		------------
 		*/
-		pure nothrow @safe static Matrix44 opCall(float_t m00, float_t m01, float_t m02, float_t m03,
+		static pure nothrow @safe Matrix44 opCall(float_t m00, float_t m01, float_t m02, float_t m03,
 							   float_t m10, float_t m11, float_t m12, float_t m13,
 							   float_t m20, float_t m21, float_t m22, float_t m23,
 							   float_t m30, float_t m31, float_t m32, float_t m33)
@@ -2891,7 +2923,7 @@ private template LinearAlgebra(float_t)
 		}
 		
 		/** ditto */
-		pure @safe static Matrix44 opCall(float_t[16] a)
+		static pure @safe Matrix44 opCall(float_t[16] a)
 		{
 			Matrix44 mat;
 			mat.a[0..16] = a[0..16].dup;
@@ -2902,7 +2934,7 @@ private template LinearAlgebra(float_t)
 		Method to construct matrix in C-like syntax. Sets columns to passed vector
 		arguments.
 		*/
-		pure nothrow @safe static Matrix44 opCall(Vector4 basisX, Vector4 basisY, Vector4 basisZ,
+		static pure nothrow @safe Matrix44 opCall(Vector4 basisX, Vector4 basisY, Vector4 basisZ,
 							   Vector4 basisW = Vector4(0, 0, 0, 1))
 		{
 			Matrix44 mat;
@@ -2919,162 +2951,78 @@ private template LinearAlgebra(float_t)
 		References:
 			$(LINK http://en.wikipedia.org/wiki/Affine_transformation).
 		*/
-		pure nothrow @safe static Matrix44 opCall(Vector3 basisX, Vector3 basisY, Vector3 basisZ,
+		static pure nothrow @safe Matrix44 opCall(Vector3 basisX, Vector3 basisY, Vector3 basisZ,
 							   Vector3 translation = Vector3(0, 0, 0))
 		{
 			return opCall(Vector4(basisX, 0), Vector4(basisX, 0), Vector4(basisX, 0), Vector4(translation, 1));
 		}
-	
-		/** Sets elements to passed values. */
-		pure nothrow @safe void set(float_t m00, float_t m01, float_t m02, float_t m03,
-				 float_t m10, float_t m11, float_t m12, float_t m13,
-				 float_t m20, float_t m21, float_t m22, float_t m23,
-				 float_t m30, float_t m31, float_t m32, float_t m33)
-		{
-			this.m00 = m00;        this.m01 = m01;        this.m02 = m02;        this.m03 = m03;
-			this.m10 = m10;        this.m11 = m11;        this.m12 = m12;        this.m13 = m13;
-			this.m20 = m20;        this.m21 = m21;        this.m22 = m22;        this.m23 = m23;
-			this.m30 = m30;        this.m31 = m31;        this.m32 = m32;        this.m33 = m33;    
-		}
 		
-		/** Sets elements as _a copy of a contents. Remember about column-major matrix memory layout. */
-		pure @safe void set(float_t[16] a)
-		{
-			this.a[0..16] = a[0..16].dup;
-		}
-	
-		/** Sets columns to passed basis vectors. */
-		pure nothrow @safe void set(Vector4 basisX, Vector4 basisY, Vector4 basisZ,
-				 Vector4 basisW = Vector4(0, 0, 0, 1))
-		{
-			v[0] = basisX;
-			v[1] = basisY;
-			v[2] = basisZ;
-			v[3] = basisW;
-		}
-
-		/** Returns: Whether all components are normalized numbers. */
-		const pure nothrow @safe @property bool isNormal()
-		{
-			return
-				std.math.isNormal(m00) && std.math.isNormal(m01) && std.math.isNormal(m02) && std.math.isNormal(m03) &&
-				std.math.isNormal(m10) && std.math.isNormal(m11) && std.math.isNormal(m12) && std.math.isNormal(m13) &&
-				std.math.isNormal(m20) && std.math.isNormal(m21) && std.math.isNormal(m22) && std.math.isNormal(m23) &&
-				std.math.isNormal(m30) && std.math.isNormal(m31) && std.math.isNormal(m32) && std.math.isNormal(m33);
-		}
-
 		/**
-		Returns: Whether this matrix is identity.
+		Constructs view matrix.
 		Params:
-			relprec, absprec = Parameters passed to equal function while calculations.
-							   Have the same meaning as in equal function.
+			eye =       Viewer's eye position.
+			target =    View target.
+			up =        View up vector.
+		
+		Arguments should not be complanar, elsewise matrix will contain infinity
+		elements. You can check this with isNormal() method.
 		*/
-		const pure nothrow @safe @property bool isIdentity(int relprec = defrelprec, int absprec = defabsprec)
+		static pure nothrow @safe Matrix44 lookAt(Vector3 eye, Vector3 target, Vector3 up)
 		{
-			return equal(this, identity, relprec, absprec);
+			Vector3 z = (eye - target).normalized;
+			alias up y;
+			Vector3 x = cross(y, z);
+			y = cross(z, x);
+			x.normalize();
+			y.normalize();
+					
+			Matrix44 mat = identity;
+			mat.v[0].xyz = Vector3(x.x, y.x, z.x);
+			mat.v[1].xyz = Vector3(x.y, y.y, z.y);
+			mat.v[2].xyz = Vector3(x.z, y.z, z.z);
+					
+			mat.m03 = -dot(eye, x);
+			mat.m13 = -dot(eye, y);
+			mat.m23 = -dot(eye, z);
+					
+			return mat;    
 		}
 		
 		/**
-		Returns: Whether this matrix is zero.
+		Constructs one-point perspecive projection matrix.
 		Params:
-			relprec, absprec = Parameters passed to equal function while calculations.
-						Has the same meaning as in equal function.
+			fov =       Field of view in vertical plane in radians.
+			aspect =    Frustum's width / height coefficient. It shouldn't be 0.
+			near =      Distance to near plane.
+			near =      Distance to far plane.
 		*/
-		const pure nothrow @safe @property bool isZero(int relprec = defrelprec, int absprec = defabsprec)
+		static pure @safe Matrix44 perspective(float_t fov, float_t aspect, float_t near, float_t far)
+		in
 		{
-			return equal(normSquare(), 0, relprec, absprec);
+			assert( fov < 2*PI );
+			assert( !equal(aspect, 0) );
+			assert( near > 0 );
+			assert( far > near );
+		}
+		body
+		{
+			real cot = 1. / tan(fov / 2.);
+					
+			return Matrix44(cot / aspect,    0,                            0,                                  0,
+							0,             cot,                            0,                                  0,
+							0,               0,  (near + far) / (near - far), 2.0f * (near * far) / (near - far),
+							0,               0,                           -1,                                  0);
 		}
 		
-		/**
-		Resets this matrix to affine transform matrix based on passed
-		vector arguments.
-		*/
-		pure nothrow @safe void set(Vector3 basisX, Vector3 basisY, Vector3 basisZ,
-				 Vector3 translation = Vector3(0, 0, 0))
-		{
-			v[0] = Vector4(basisX, 0);
-			v[1] = Vector4(basisY, 0);
-			v[2] = Vector4(basisZ, 0);
-			v[3] = Vector4(translation, 1);
-		}
-	
-		/** Constructs _scale matrix with _scale coefficients specified as arguments. */
-		pure nothrow @safe static Matrix44 scale(float_t sx, float_t sy, float_t sz)
-		{
-			Matrix44 mat = identity;
-			with (mat)
-			{
-				m00 = sx;
-				m11 = sy;
-				m22 = sz;            
-			}
-	
-			return mat;
-		}
-	
-		/** Constructs _scale matrix with _scale coefficients specified as v's components. */
-		pure nothrow @safe static Matrix44 scale(Vector3 v)
-		{
-			return scale(v.x, v.y, v.z);
-		}
-	
-		/** Construct matrix that represents rotation around corresponding axis. */
-		pure nothrow @safe static Matrix44 rotationX(float_t radians)
-		{
-			Matrix44 mat = identity;
-			float_t c = cos(radians);
-			float_t s = sin(radians);
-			with (mat)
-			{
-				m11 = m22 = c;
-				m21 = s;
-				m12 = -s;            
-			}
-	
-			return mat;
-		}
-	
-		/** ditto */
-		pure nothrow @safe static Matrix44 rotationY(float_t radians)
-		{
-			Matrix44 mat = identity;
-			float_t c = cos(radians);
-			float_t s = sin(radians);
-			with (mat)
-			{
-				m00 = m22 = c;
-				m20 = -s;
-				m02 = s;            
-			}
-	
-			return mat;
-		}
-	
-		/** ditto */
-		pure nothrow @safe static Matrix44 rotationZ(float_t radians)
-		{
-			Matrix44 mat = identity;
-			float_t c = cos(radians);
-			float_t s = sin(radians);
-			with (mat)
-			{
-				m00 = m11 = c;
-				m10 = s;
-				m01 = -s;            
-			}
-	
-			return mat;
-		}
-	
 		/**
 		Constructs matrix that represents _rotation specified by euler angles passed as arguments.
 		Order of _rotation application is: roll (Z axis), pitch (X axis), yaw (Y axis).
 		*/
-		pure nothrow @safe static Matrix44 rotation(float_t yaw, float_t pitch, float_t roll)
+		static pure nothrow @safe Matrix44 rotation(float_t yaw, float_t pitch, float_t roll)
 		{
 			return Matrix44.rotationY(yaw) * Matrix44.rotationX(pitch) * Matrix44.rotationZ(roll);
 		}
-	
+		
 		/**
 		Constructs matrix that represents _rotation specified by axis and angle.
 		Method works with assumption that axis is unit vector.        
@@ -3082,7 +3030,7 @@ private template LinearAlgebra(float_t)
 			AssertError on non-unit axis call attempt if module was compiled with
 			contract checks enabled.
 		*/
-		pure @safe static Matrix44 rotation(Vector3 axis, float_t radians)
+		static pure @safe Matrix44 rotation(Vector3 axis, float_t radians)
 		in { assert( axis.isUnit ); }
 		body
 		{
@@ -3098,7 +3046,7 @@ private template LinearAlgebra(float_t)
 			real xs = axis.x * s;
 			real ys = axis.y * s;
 			real zs = axis.z * s;
-	
+			
 			Matrix44 mat = identity;
 			with (mat)
 			{
@@ -3106,7 +3054,7 @@ private template LinearAlgebra(float_t)
 				m10 = xycc + zs;        m11 = y2 * cc + c;      m12 = yzcc - xs;
 				m20 = xzcc - ys;        m21 = yzcc + xs;        m22 = z2 * cc + c;
 			}
-	
+			
 			return mat;
 		}
 		
@@ -3117,7 +3065,7 @@ private template LinearAlgebra(float_t)
 			AssertError on non-unit quaternion call attempt if module was compiled with
 			contract checks enabled.
 		*/
-		pure @safe static Matrix44 rotation(Quaternion q)
+		static pure @safe Matrix44 rotation(Quaternion q)
 		in { assert( q.isUnit ); }
 		body
 		{
@@ -3144,77 +3092,116 @@ private template LinearAlgebra(float_t)
 			
 			return mat;
 		}
-	
+		
+		/** Construct matrix that represents rotation around corresponding axis. */
+		static pure nothrow @safe Matrix44 rotationX(float_t radians)
+		{
+			Matrix44 mat = identity;
+			float_t c = cos(radians);
+			float_t s = sin(radians);
+			with (mat)
+			{
+				m11 = m22 = c;
+				m21 = s;
+				m12 = -s;            
+			}
+			
+			return mat;
+		}
+		
+		/** ditto */
+		static pure nothrow @safe Matrix44 rotationY(float_t radians)
+		{
+			Matrix44 mat = identity;
+			float_t c = cos(radians);
+			float_t s = sin(radians);
+			with (mat)
+			{
+				m00 = m22 = c;
+				m20 = -s;
+				m02 = s;            
+			}
+			
+			return mat;
+		}
+		
+		/** ditto */
+		static pure nothrow @safe Matrix44 rotationZ(float_t radians)
+		{
+			Matrix44 mat = identity;
+			float_t c = cos(radians);
+			float_t s = sin(radians);
+			with (mat)
+			{
+				m00 = m11 = c;
+				m10 = s;
+				m01 = -s;            
+			}
+			
+			return mat;
+		}
+		
+		/** Constructs _scale matrix with _scale coefficients specified as arguments. */
+		static pure nothrow @safe Matrix44 scale(float_t sx, float_t sy, float_t sz)
+		{
+			Matrix44 mat = identity;
+			with (mat)
+			{
+				m00 = sx;
+				m11 = sy;
+				m22 = sz;            
+			}
+			
+			return mat;
+		}
+		
+		/** Constructs _scale matrix with _scale coefficients specified as v's components. */
+		static pure nothrow @safe Matrix44 scale(Vector3 v)
+		{
+			return scale(v.x, v.y, v.z);
+		}
+		
 		/** Constructs _translation matrix with offset values specified as arguments. */
-		pure nothrow @safe static Matrix44 translation(float_t x, float_t y, float_t z)
+		static pure nothrow @safe Matrix44 translation(float_t x, float_t y, float_t z)
 		{
 			return Matrix44(1, 0, 0, x,
 							0, 1, 0, y,
 							0, 0, 1, z,
 							0, 0, 0, 1);
 		}
-	
+		
 		/** Constructs _translation matrix with offset values specified as v's components. */
-		pure nothrow @safe static Matrix44 translation(Vector3 v)
+		static pure nothrow @safe Matrix44 translation(Vector3 v)
 		{
 			return translation(v.x, v.y, v.z);
 		}
 		
-		/**
-		Constructs one-point perspecive projection matrix.
-		Params:
-			fov =       Field of view in vertical plane in radians.
-			aspect =    Frustum's width / height coefficient. It shouldn't be 0.
-			near =      Distance to near plane.
-			near =      Distance to far plane.
-		*/
-		pure @safe static Matrix44 perspective(float_t fov, float_t aspect, float_t near, float_t far)
-		in
+		/** R/W property. Corner 3x3 minor. */
+		const pure nothrow @safe @property Matrix33 cornerMinor()
 		{
-			assert( fov < 2*PI );
-			assert( !equal(aspect, 0) );
-			assert( near > 0 );
-			assert( far > near );
-		}
-		body
-		{
-			real cot = 1. / tan(fov / 2.);
-					
-			return Matrix44(cot / aspect,    0,                            0,                                  0,
-							0,             cot,                            0,                                  0,
-							0,               0,  (near + far) / (near - far), 2.0f * (near * far) / (near - far),
-							0,               0,                           -1,                                  0);
+			return Matrix33(m00, m01, m02,
+							m10, m11, m12,
+							m20, m21, m22);
 		}
 		
-		/**
-		Constructs view matrix.
-		Params:
-			eye =       Viewer's eye position.
-			target =    View target.
-			up =        View up vector.
-		
-		Arguments should not be complanar, elsewise matrix will contain infinity
-		elements. You can check this with isNormal() method.
-		*/
-		pure nothrow @safe static Matrix44 lookAt(Vector3 eye, Vector3 target, Vector3 up)
+		/** ditto */
+		pure nothrow @safe @property void cornerMinor(Matrix33 mat)
 		{
-			Vector3 z = (eye - target).normalized;
-			alias up y;
-			Vector3 x = cross(y, z);
-			y = cross(z, x);
-			x.normalize();
-			y.normalize();
-					
-			Matrix44 mat = identity;
-			mat.v[0].xyz = Vector3(x.x, y.x, z.x);
-			mat.v[1].xyz = Vector3(x.y, y.y, z.y);
-			mat.v[2].xyz = Vector3(x.z, y.z, z.z);
-					
-			mat.m03 = -dot(eye, x);
-			mat.m13 = -dot(eye, y);
-			mat.m23 = -dot(eye, z);
-					
-			return mat;    
+			m00 = mat.m00;        m01 = mat.m01;        m02 = mat.m02;
+			m10 = mat.m10;        m11 = mat.m11;        m12 = mat.m12;
+			m20 = mat.m20;        m21 = mat.m21;        m22 = mat.m22;
+		}
+		
+		/** Returns: Determinant */
+		const pure nothrow @safe @property real determinant()
+		{
+			return
+				+ (m00 * m11 - m01 * m10) * (m22 * m33 - m23 * m32)
+				- (m00 * m12 - m02 * m10) * (m21 * m33 - m23 * m31)
+				+ (m00 * m13 - m03 * m10) * (m21 * m32 - m22 * m31)
+				+ (m01 * m12 - m02 * m11) * (m20 * m33 - m23 * m30)
+				- (m01 * m13 - m03 * m11) * (m20 * m32 - m22 * m30)
+				+ (m02 * m13 - m03 * m12) * (m20 * m31 - m21 * m30);
 		}
 		
 		/**
@@ -3285,16 +3272,46 @@ private template LinearAlgebra(float_t)
 				rdet * (m00 * (m11 * m22 - m12 * m21) + m01 * (m12 * m20 - m10 * m22) + m02 * (m10 * m21 - m11 * m20)));
 		}
 		
-		/** Returns: Determinant */
-		const pure nothrow @safe @property real determinant()
+		/** 
+		Returns: Whether this matrix represents affine transformation.
+		References:
+			$(LINK http://en.wikipedia.org/wiki/Affine_transformation).
+		*/
+		const pure nothrow @safe @property bool isAffine()
+		{
+			return equal(m30, 0) && equal(m31, 0) && equal(m32, 0) && equal(m33, 1);
+		}
+		
+		/**
+		Returns: Whether this matrix is identity.
+		Params:
+			relprec, absprec = Parameters passed to equal function while calculations.
+							   Have the same meaning as in equal function.
+		*/
+		const pure nothrow @safe @property bool isIdentity(int relprec = defrelprec, int absprec = defabsprec)
+		{
+			return equal(this, identity, relprec, absprec);
+		}
+		
+		/** Returns: Whether all components are normalized numbers. */
+		const pure nothrow @safe @property bool isNormal()
 		{
 			return
-				+ (m00 * m11 - m01 * m10) * (m22 * m33 - m23 * m32)
-				- (m00 * m12 - m02 * m10) * (m21 * m33 - m23 * m31)
-				+ (m00 * m13 - m03 * m10) * (m21 * m32 - m22 * m31)
-				+ (m01 * m12 - m02 * m11) * (m20 * m33 - m23 * m30)
-				- (m01 * m13 - m03 * m11) * (m20 * m32 - m22 * m30)
-				+ (m02 * m13 - m03 * m12) * (m20 * m31 - m21 * m30);
+				std.math.isNormal(m00) && std.math.isNormal(m01) && std.math.isNormal(m02) && std.math.isNormal(m03) &&
+				std.math.isNormal(m10) && std.math.isNormal(m11) && std.math.isNormal(m12) && std.math.isNormal(m13) &&
+				std.math.isNormal(m20) && std.math.isNormal(m21) && std.math.isNormal(m22) && std.math.isNormal(m23) &&
+				std.math.isNormal(m30) && std.math.isNormal(m31) && std.math.isNormal(m32) && std.math.isNormal(m33);
+		}
+		
+		/**
+		Returns: Whether this matrix is zero.
+		Params:
+			relprec, absprec = Parameters passed to equal function while calculations.
+						Has the same meaning as in equal function.
+		*/
+		const pure nothrow @safe @property bool isZero(int relprec = defrelprec, int absprec = defabsprec)
+		{
+			return equal(normSquare(), 0, relprec, absprec);
 		}
 		
 		/**
@@ -3309,9 +3326,9 @@ private template LinearAlgebra(float_t)
 		
 		/**
 		Returns: Square of Frobenius norm of matrix.
-
+		
 		Method doesn't need calculation of square root.
-
+		
 		References:
 			$(LINK http://en.wikipedia.org/wiki/Frobenius_norm#Frobenius_norm).
 		*/
@@ -3326,71 +3343,6 @@ private template LinearAlgebra(float_t)
 			
 			return ret;
 		}
-		
-		/** 
-		Returns: Whether this matrix represents affine transformation.
-		References:
-			$(LINK http://en.wikipedia.org/wiki/Affine_transformation).
-		*/
-		const pure nothrow @safe @property bool isAffine()
-		{
-			return equal(m30, 0) && equal(m31, 0) && equal(m32, 0) && equal(m33, 1);
-		}
-		
-		/** Transposes this matrix. */
-		pure nothrow @safe void transpose()
-		{
-			/*           */        swap(m01, m10);        swap(m02, m20);        swap(m03, m30);
-			/*           */        /*           */        swap(m12, m21);        swap(m13, m31);
-			/*           */        /*           */        /*           */        swap(m23, m32);
-			/*           */        /*           */        /*           */        /*           */
-		}
-		
-		/** Returns: Transposed copy of this matrix. */
-		const pure nothrow @safe @property Matrix44 transposed()
-		{
-			return Matrix44(
-				m00, m10, m20, m30,
-				m01, m11, m21, m31,
-				m02, m12, m22, m32,
-				m03, m13, m23, m33 );
-		}
-		
-		/** R/W property. Corner 3x3 minor. */
-		const pure nothrow @safe @property Matrix33 cornerMinor()
-		{
-			return Matrix33(m00, m01, m02,
-							m10, m11, m12,
-							m20, m21, m22);
-		}
-		
-		/** ditto */
-		pure nothrow @safe @property void cornerMinor(Matrix33 mat)
-		{
-			m00 = mat.m00;        m01 = mat.m01;        m02 = mat.m02;
-			m10 = mat.m10;        m11 = mat.m11;        m12 = mat.m12;
-			m20 = mat.m20;        m21 = mat.m21;        m22 = mat.m22;
-		}
-		
-		const pure nothrow @safe @property float_t x()		{ return m03; }
-		const pure nothrow @safe @property float_t y()		{ return m13; }
-		const pure nothrow @safe @property float_t z()		{ return m23; }
-		const pure nothrow @safe @property float_t w()		{ return m33; }
-		const pure nothrow @safe @property Vector2 xy()		{ return Vector2(m03, m13); }
-		const pure nothrow @safe @property Vector2 xz()		{ return Vector2(m03, m23); }
-		const pure nothrow @safe @property Vector2 yz()		{ return Vector2(m13, m23); }
-		const pure nothrow @safe @property Vector3 xyz()	{ return Vector3(m03, m13, m23); }
-		const pure nothrow @safe @property Vector4 xyzw()	{ return v[3]; }
-		
-		pure nothrow @safe @property void x(float_t val)	{ m03 = val; }
-		pure nothrow @safe @property void y(float_t val)	{ m13 = val; }
-		pure nothrow @safe @property void z(float_t val)	{ m23 = val; }
-		pure nothrow @safe @property void w(float_t val)	{ m33 = val; }
-		pure nothrow @safe @property void xy(Vector2 val)	{ m03 = val.x; m13 = val.y; }
-		pure nothrow @safe @property void xz(Vector2 val)	{ m03 = val.x; m23 = val.y; }
-		pure nothrow @safe @property void yz(Vector2 val)	{ m13 = val.x; m23 = val.y; }
-		pure nothrow @safe @property void xyz(Vector3 val)	{ m03 = val.x; m13 = val.y; m23 = val.z; }
-		pure nothrow @safe @property void xyzw(Vector4 val)	{ v[3] = val; }
 		
 		/**
 		Standard operators that have intuitive meaning, same as in classical math. Exception
@@ -3408,7 +3360,7 @@ private template LinearAlgebra(float_t)
 							-m20, -m21, -m22, -m23,
 							-m30, -m31, -m32, -m33);
 		}
-	
+		
 		/** ditto */
 		const pure nothrow @safe Matrix44 opAdd(Matrix44 mat)
 		{
@@ -3417,7 +3369,7 @@ private template LinearAlgebra(float_t)
 							m20 + mat.m20, m21 + mat.m21, m22 + mat.m22, m23 + mat.m23,
 							m30 + mat.m30, m31 + mat.m31, m32 + mat.m32, m33 + mat.m33);
 		}
-	
+		
 		/** ditto */
 		pure nothrow @safe void opAddAssign(Matrix44 mat)
 		{
@@ -3426,7 +3378,7 @@ private template LinearAlgebra(float_t)
 			m20 += mat.m20; m21 += mat.m21; m22 += mat.m22; m23 += mat.m23;
 			m30 += mat.m30; m31 += mat.m31; m32 += mat.m32; m33 += mat.m33;
 		}
-	
+		
 		/** ditto */
 		const pure nothrow @safe Matrix44 opSub(Matrix44 mat)
 		{
@@ -3435,7 +3387,7 @@ private template LinearAlgebra(float_t)
 							m20 - mat.m20, m21 - mat.m21, m22 - mat.m22, m23 - mat.m23,
 							m30 - mat.m30, m31 - mat.m31, m32 - mat.m32, m33 - mat.m33);
 		}
-	
+		
 		/** ditto */
 		pure nothrow @safe void opSubAssign(Matrix44 mat)
 		{
@@ -3444,7 +3396,7 @@ private template LinearAlgebra(float_t)
 			m20 -= mat.m20; m21 -= mat.m21; m22 -= mat.m22; m23 -= mat.m23;        
 			m30 -= mat.m30; m31 -= mat.m31; m32 -= mat.m32; m33 -= mat.m33;        
 		}
-	
+		
 		/** ditto */
 		const pure nothrow @safe Matrix44 opMul(float_t k)
 		{
@@ -3453,7 +3405,7 @@ private template LinearAlgebra(float_t)
 							m20 * k, m21 * k, m22 * k, m23 * k,
 							m30 * k, m31 * k, m32 * k, m33 * k);
 		}
-	
+		
 		/** ditto */
 		pure nothrow @safe void opMulAssign(float_t k)
 		{
@@ -3462,7 +3414,7 @@ private template LinearAlgebra(float_t)
 			m20 *= k; m21 *= k; m22 *= k; m23 *= k;
 			m30 *= k; m31 *= k; m32 *= k; m33 *= k;
 		}
-	
+		
 		/** ditto */
 		const pure nothrow @safe Matrix44 opMul_r(float_t k)
 		{
@@ -3471,7 +3423,7 @@ private template LinearAlgebra(float_t)
 							m20 * k, m21 * k, m22 * k, m23 * k,
 							m30 * k, m31 * k, m32 * k, m33 * k);
 		}
-	
+		
 		/** ditto */
 		const pure nothrow @safe Matrix44 opDiv(float_t k)
 		{
@@ -3481,7 +3433,7 @@ private template LinearAlgebra(float_t)
 							m20 / k, m21 / k, m22 / k, m23 / k,
 							m30 / k, m31 / k, m32 / k, m33 / k);
 		}
-	
+		
 		/** ditto */
 		pure nothrow @safe void opDivAssign(float_t k)
 		{
@@ -3490,7 +3442,7 @@ private template LinearAlgebra(float_t)
 			m20 /= k; m21 /= k; m22 /= k; m23 /= k;
 			m30 /= k; m31 /= k; m32 /= k; m33 /= k;
 		}
-	
+		
 		/** ditto */
 		const pure nothrow @safe bool opEquals(Matrix44 mat)
 		{
@@ -3499,7 +3451,7 @@ private template LinearAlgebra(float_t)
 				   m20 == mat.m20 && m21 == mat.m21 && m22 == mat.m22 && m23 == mat.m23 &&
 				   m30 == mat.m30 && m31 == mat.m31 && m32 == mat.m32 && m33 == mat.m33;
 		}
-
+		
 		/** ditto */
 		const pure nothrow @safe Matrix44 opMul(Matrix44 mat)
 		{
@@ -3507,29 +3459,29 @@ private template LinearAlgebra(float_t)
 							m00 * mat.m01 + m01 * mat.m11 + m02 * mat.m21 + m03 * mat.m31,
 							m00 * mat.m02 + m01 * mat.m12 + m02 * mat.m22 + m03 * mat.m32,
 							m00 * mat.m03 + m01 * mat.m13 + m02 * mat.m23 + m03 * mat.m33,
-	
+			
 							m10 * mat.m00 + m11 * mat.m10 + m12 * mat.m20 + m13 * mat.m30,
 							m10 * mat.m01 + m11 * mat.m11 + m12 * mat.m21 + m13 * mat.m31,
 							m10 * mat.m02 + m11 * mat.m12 + m12 * mat.m22 + m13 * mat.m32,
 							m10 * mat.m03 + m11 * mat.m13 + m12 * mat.m23 + m13 * mat.m33,
-	
+			
 							m20 * mat.m00 + m21 * mat.m10 + m22 * mat.m20 + m23 * mat.m30,
 							m20 * mat.m01 + m21 * mat.m11 + m22 * mat.m21 + m23 * mat.m31,
 							m20 * mat.m02 + m21 * mat.m12 + m22 * mat.m22 + m23 * mat.m32,
 							m20 * mat.m03 + m21 * mat.m13 + m22 * mat.m23 + m23 * mat.m33,
-	
+			
 							m30 * mat.m00 + m31 * mat.m10 + m32 * mat.m20 + m33 * mat.m30,
 							m30 * mat.m01 + m31 * mat.m11 + m32 * mat.m21 + m33 * mat.m31,
 							m30 * mat.m02 + m31 * mat.m12 + m32 * mat.m22 + m33 * mat.m32,
 							m30 * mat.m03 + m31 * mat.m13 + m32 * mat.m23 + m33 * mat.m33);
 		}
-	
+		
 		/** ditto */
 		pure nothrow @safe void opMulAssign(Matrix44 mat)
 		{
 			this = this * mat;
 		}
-	
+		
 		/** ditto */
 		const pure nothrow @safe Vector3 opMul(Vector3 v)
 		{
@@ -3537,7 +3489,7 @@ private template LinearAlgebra(float_t)
 						   v.x * m10 + v.y * m11 + v.z * m12 + m13,
 						   v.x * m20 + v.y * m21 + v.z * m22 + m23 );
 		}
-	
+		
 		/** ditto */
 		const pure nothrow @safe Vector4 opMul(Vector4 v)
 		{
@@ -3546,7 +3498,7 @@ private template LinearAlgebra(float_t)
 						   v.x * m20 + v.y * m21 + v.z * m22 + v.w * m23,
 						   v.x * m30 + v.y * m31 + v.z * m32 + v.w * m33);
 		}
-	
+		
 		/** Returns: Element at row'th _row and col'th column. */
 		const pure @safe float_t opIndex(uint row, uint col)
 		in { assert( col < 4 && row < 4 ); }
@@ -3554,7 +3506,7 @@ private template LinearAlgebra(float_t)
 		{
 			return m[col][row];
 		}
-	
+		
 		/** Assigns value f to element at row'th _row and col'th column. */
 		pure @safe void opIndexAssign(float_t f, uint row, uint col)
 		in { assert( col < 4 && row < 4 ); }
@@ -3570,7 +3522,7 @@ private template LinearAlgebra(float_t)
 		{
 			return v[col];
 		}
-	
+		
 		/** Replaces elements in col'th column with v's values. */
 		pure @safe void opIndexAssign(Vector4 v, uint col)
 		in { assert( col < 4 ); }
@@ -3578,7 +3530,7 @@ private template LinearAlgebra(float_t)
 		{
 			this.v[col] = v;
 		}
-	
+		
 		/**
 		Returns: float_t pointer to [0,0] element of this matrix. It's like a _ptr method for arrays.
 		
@@ -3587,6 +3539,47 @@ private template LinearAlgebra(float_t)
 		pure nothrow @safe @property float_t* ptr()
 		{
 			return a.ptr;
+		}
+		
+		/** Sets elements to passed values. */
+		pure nothrow @safe void set(float_t m00, float_t m01, float_t m02, float_t m03,
+				 float_t m10, float_t m11, float_t m12, float_t m13,
+				 float_t m20, float_t m21, float_t m22, float_t m23,
+				 float_t m30, float_t m31, float_t m32, float_t m33)
+		{
+			this.m00 = m00;        this.m01 = m01;        this.m02 = m02;        this.m03 = m03;
+			this.m10 = m10;        this.m11 = m11;        this.m12 = m12;        this.m13 = m13;
+			this.m20 = m20;        this.m21 = m21;        this.m22 = m22;        this.m23 = m23;
+			this.m30 = m30;        this.m31 = m31;        this.m32 = m32;        this.m33 = m33;    
+		}
+		
+		/** Sets elements as _a copy of a contents. Remember about column-major matrix memory layout. */
+		pure @safe void set(float_t[16] a)
+		{
+			this.a[0..16] = a[0..16].dup;
+		}
+		
+		/**
+		Resets this matrix to affine transform matrix based on passed
+		vector arguments.
+		*/
+		pure nothrow @safe void set(Vector3 basisX, Vector3 basisY, Vector3 basisZ,
+				 Vector3 translation = Vector3(0, 0, 0))
+		{
+			v[0] = Vector4(basisX, 0);
+			v[1] = Vector4(basisY, 0);
+			v[2] = Vector4(basisZ, 0);
+			v[3] = Vector4(translation, 1);
+		}
+		
+		/** Sets columns to passed basis vectors. */
+		pure nothrow @safe void set(Vector4 basisX, Vector4 basisY, Vector4 basisZ,
+				 Vector4 basisW = Vector4(0, 0, 0, 1))
+		{
+			v[0] = basisX;
+			v[1] = basisY;
+			v[2] = basisZ;
+			v[3] = basisW;
 		}
 		
 		/** Returns: Copy of this matrix with float type elements. */
@@ -3618,13 +3611,63 @@ private template LinearAlgebra(float_t)
 				cast(real)m20, cast(real)m21, cast(real)m22, cast(real)m23,
 				cast(real)m30, cast(real)m31, cast(real)m32, cast(real)m33 );
 		}
-
+		
+		/** Returns: String representation. */
 		const string toString() { 
 			return format("[" ,m00, ", " ,m01, ", " ,m02, ", " ,m03, ",\n",
 						  " " ,m10, ", " ,m11, ", " ,m12, ", " ,m13, ",\n",
 						  " " ,m20, ", " ,m21, ", " ,m22, ", " ,m23, ",\n",
 						  " " ,m30, ", " ,m31, ", " ,m32, ", " ,m33, "]");
 		}
+		
+		/** Transposes this matrix. */
+		pure nothrow @safe void transpose()
+		{
+			/*           */        swap(m01, m10);        swap(m02, m20);        swap(m03, m30);
+			/*           */        /*           */        swap(m12, m21);        swap(m13, m31);
+			/*           */        /*           */        /*           */        swap(m23, m32);
+			/*           */        /*           */        /*           */        /*           */
+		}
+		
+		/** Returns: Transposed copy of this matrix. */
+		const pure nothrow @safe @property Matrix44 transposed()
+		{
+			return Matrix44(
+				m00, m10, m20, m30,
+				m01, m11, m21, m31,
+				m02, m12, m22, m32,
+				m03, m13, m23, m33 );
+		}
+		
+		/**
+		Routines known as swizzling.
+		Returns:
+			New vector constructed from this one and having component values
+			that correspond to method name.
+		*/
+		const pure nothrow @safe @property float_t x()		{ return m03; }
+		const pure nothrow @safe @property float_t y()		{ return m13; } /// ditto
+		const pure nothrow @safe @property float_t z()		{ return m23; } /// ditto
+		const pure nothrow @safe @property float_t w()		{ return m33; } /// ditto
+		const pure nothrow @safe @property Vector2 xy()		{ return Vector2(m03, m13); } /// ditto
+		const pure nothrow @safe @property Vector2 xz()		{ return Vector2(m03, m23); } /// ditto
+		const pure nothrow @safe @property Vector2 yz()		{ return Vector2(m13, m23); } /// ditto
+		const pure nothrow @safe @property Vector3 xyz()	{ return Vector3(m03, m13, m23); } /// ditto
+		const pure nothrow @safe @property Vector4 xyzw()	{ return v[3]; } /// ditto
+		
+		/**
+		Routines known as swizzling.
+		Assigns new values to some components corresponding to method name.
+		*/
+		pure nothrow @safe @property void x(float_t val)	{ m03 = val; }
+		pure nothrow @safe @property void y(float_t val)	{ m13 = val; } /// ditto
+		pure nothrow @safe @property void z(float_t val)	{ m23 = val; } /// ditto
+		pure nothrow @safe @property void w(float_t val)	{ m33 = val; } /// ditto
+		pure nothrow @safe @property void xy(Vector2 val)	{ m03 = val.x; m13 = val.y; } /// ditto
+		pure nothrow @safe @property void xz(Vector2 val)	{ m03 = val.x; m23 = val.y; } /// ditto
+		pure nothrow @safe @property void yz(Vector2 val)	{ m13 = val.x; m23 = val.y; } /// ditto
+		pure nothrow @safe @property void xyz(Vector3 val)	{ m03 = val.x; m13 = val.y; m23 = val.z; } /// ditto
+		pure nothrow @safe @property void xyzw(Vector4 val)	{ v[3] = val; } /// ditto
 	}
 	
 	alias EqualityByNorm!(Matrix44).equal equal; /// Introduces approximate equality function for Matrix44.
@@ -3692,21 +3735,21 @@ unittest
 	assert( Vector2(1, 2).normalized.isUnit );
 	assert( Vector3(1, 2, 3).normalized.isUnit );
 	assert( Vector4(1, 2, 3, 4).normalized.isUnit );
-
+	
 	assert( Vector2(1, 2).dominatingAxis == Ort.Y );
 	assert( Vector3(1, 2, 3).dominatingAxis == Ort.Z );
 	assert( Vector4(1, 2, 3, 4).dominatingAxis == Ort.W );
-
+	
 	Vector4 v;
 	v.set(1, 2, 3, 4);
 	assert( v.isNormal );
 	v /= 0;
 	assert( !v.isNormal );
-
+	
 	v.set(1, 2, 3, 4);
 	v[Ort.Y] = v[Ort.X];
 	assert( v == Vector4(1, 1, 3, 4) );
-
+	
 	Vector4 t = Vector4(100, 200, 300, 400);
 	Vector4 s;
 	v.set(1, 2, 3, 4);
@@ -3718,7 +3761,7 @@ unittest
 	v /= 100;
 	v = (10 * v * 10) / 100;
 	assert( equal(v, s) );
-
+	
 	assert( dot( cross( Vector3(1, 0, 2), Vector3(4, 0, 5) ), Vector3(3, 0, -2) ) == 0 );
 }
 
@@ -3739,7 +3782,7 @@ unittest
 	Matrix33 mat1 = Matrix33(1,2,3,4,5,6,7,8,9);
 	static float[9] a = [1,2,3,4,5,6,7,8,9];
 	Matrix33 mat2 = Matrix33(a);
-
+	
 	assert(mat1 == mat2.transposed);
 }
 

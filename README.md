@@ -25,10 +25,14 @@ Compilation
 
 	dmd import/helix/*.d unittesting.d -ofunittesting -O -property -unittest -g -w -wi && ./unittesting
 
-`./unittesting` returns true (i.e. 0) when all the unit tests pass, and false otherwise, so you can use it for your automatic building systems:
+If nothing shows up, everything is fine. Alternatively, `./unittesting` returns true (i.e. 0) when all the unit tests pass, and false otherwise, so you can use it for your automatic building systems:
 
 	./unittesting && echo "passed" || echo "failed"
-	
+
+Documentation
+
+	dmd import/helix/*.d -D -Dddoc -o-
+
 Authors
 -------
 

@@ -88,26 +88,26 @@ private template Color(float_t)
 		alias helix.basic.clampAbove  clampAbove;
 		alias helix.basic.clamp       clamp;
 		alias helix.basic.equal       equal;
-
+		
 		alias .Color!(float).HSL      HSLf;
 		alias .Color!(float).Color3   Color3f;
 		alias .Color!(float).Color4   Color4f;
-
+		
 		alias .Color!(double).HSL     HSLd;
 		alias .Color!(double).Color3  Color3d;
 		alias .Color!(double).Color4  Color4d;
-
+		
 		alias .Color!(real).HSL       HSLr;
 		alias .Color!(real).Color3    Color3r;
 		alias .Color!(real).Color4    Color4r;
-
+		
 		static immutable
 		{
 			float_t rgbK = 255;
 			float_t hslK = 240;
 		}
 	}
-
+	
 	/************************************************************************************
 	Hue, Saturation, Luminance triple.
 	*************************************************************************************/
@@ -116,10 +116,10 @@ private template Color(float_t)
 		float_t h; /// Hue.
 		float_t s; /// Saturation.
 		float_t l; /// Luminance.
-
+		
 		/**
 		Method to construct struct in C-like syntax.
-
+		
 		Examples:
 		------------
 		HSL hsl = HSL(0.1, 0.2, 0.3);
@@ -131,7 +131,7 @@ private template Color(float_t)
 			hsl.set(h, s, l);
 			return hsl;
 		}
-
+		
 		/** Sets components to values of passed arguments. */
 		pure nothrow @safe void set(float_t h, float_t s, float_t l)
 		{
@@ -139,25 +139,25 @@ private template Color(float_t)
 			this.s = s;
 			this.l = l;
 		}
-
+		
 		/** Returns: Integer value of corresponding component in range [0; 240]. */
 		const pure nothrow @trusted @property uint hi()
 		{
 			return cast(uint)(h * hslK);
 		}
-
+		
 		/** ditto */
 		const pure nothrow @trusted @property uint si()
 		{
 			return cast(uint)(s * hslK);
 		}
-
+		
 		/** ditto */
 		const pure nothrow @trusted @property uint li()
 		{
 			return cast(uint)(l * hslK);
 		}
-
+		
 		/**
 		Set components to values of passed arguments. It is assumed that values of
 		arguments are in range [0; 240].
@@ -166,25 +166,25 @@ private template Color(float_t)
 		{
 			this.h = cast(float_t)h / hslK;
 		}
-
+		
 		/** ditto */
 		pure nothrow @safe @property void si(uint s)
 		{
 			this.s = cast(float_t)s / hslK;
 		}
-
+		
 		/** ditto */
 		pure nothrow @safe @property void li(uint l)
 		{
 			this.l = cast(float_t)l / hslK;
 		}
-
+		
 		/** Component-wise equality operator. */
 		const pure nothrow @safe bool opEquals(HSL hsl)
 		{
 			return h == hsl.h && s == hsl.s && l == hsl.l;
 		}
-
+		
 		/** Returns: Color3 representing the same color as this triple. */
 		const pure nothrow @trusted Color3 toColor3()
 		{
@@ -195,10 +195,10 @@ private template Color(float_t)
 				// range check: note values passed add/subtract thirds of range
 				if (hue < 0)
 					hue += hslMax;
-
+				
 				if (hue > hslMax)
 					hue -= hslMax;
-
+				
 				// return r,g, or b value from this tridrant
 				if (hue < hslMax / 6)
 					return cast(short)(n1 + ((n2 - n1) * hue + hslMax / 12) / (hslMax / 6));
@@ -209,14 +209,14 @@ private template Color(float_t)
 				else
 					return n1;
 			}
-
+			
 			short hue = cast(short)hi;
 			short lum = cast(short)li;
 			short sat = cast(short)si;
 			short magic1, magic2; // calculated magic numbers
-
+			
 			Color3 ret;
-
+			
 			if (sat == 0) // achromatic case
 			{
 				ret.set(l, l, l);
@@ -228,19 +228,19 @@ private template Color(float_t)
 					magic2 = cast(short)((lum * (hslMax + sat) + hslMax / 2) / hslMax);
 				else
 					magic2 = cast(short)(lum + sat - (lum * sat + hslMax / 2) / hslMax);
-
+				
 				magic1 = cast(short)(2 * lum - magic2);
-
+				
 				// get RGB, change units from hslMax to [0; 1] range
 				ret.r = cast(float_t)(HueToRGB(magic1, magic2, cast(short)(hue + (hslMax / 3))) * rgbMax + hslMax / 2) / hslK / rgbK;
 				ret.g = cast(float_t)(HueToRGB(magic1, magic2, hue) * rgbMax + hslMax / 2) / hslK / rgbK;
 				ret.b = cast(float_t)(HueToRGB(magic1, magic2, cast(short)(hue - (hslMax / 3))) * rgbMax + hslMax / 2) / hslK / rgbK;
 			}
-
+			
 			return ret;
 		}
 	}
-
+	
 	/**
 	Approximate equality function.
 	Params:
@@ -253,7 +253,7 @@ private template Color(float_t)
 		c.set(a.h - b.h, a.s - b.s, a.l - b.l);
 		return .equal(c.h * c.h + c.s * c.s + c.l * c.l, 0, relprec, absprec);
 	}
-
+	
 	/************************************************************************************
 	Red, Green, Blue triple.
 	*************************************************************************************/
@@ -265,13 +265,13 @@ private template Color(float_t)
 			float_t g; /// Green.
 			float_t b; /// Blue.
 		}
-
+		
 		/// Color3 with all components seted to NaN.
 		static immutable Color3 nan = { float_t.nan, float_t.nan, float_t.nan };
-
+		
 		/**
 		Method to construct color in C-like syntax.
-
+		
 		Examples:
 		------------
 		Color3 c = Color3(0.1, 0.2, 0.3);
@@ -283,15 +283,15 @@ private template Color(float_t)
 			v.set(r, g, b);
 			return v;
 		}
-
+		
 		/**
 		Method to construct color in C-like syntax from value specified
 		in uint parameter.
-
+		
 		Params:
 			src     = uint to extract value from.
 			order   = specifies byte-wise _order in src.
-
+		
 		Examples:
 		------------
 		Color3 c = Color3(0x00FFEEDD, ByteOrder.XRGB);
@@ -303,7 +303,7 @@ private template Color(float_t)
 			v.set(src, order);
 			return v;
 		}
-
+		
 		/** Sets components to values of passed arguments. */
 		pure nothrow @safe void set(float_t r, float_t g, float_t b)
 		{
@@ -311,10 +311,10 @@ private template Color(float_t)
 			this.g = g;
 			this.b = b;
 		}
-
+		
 		/**
 		Sets components according to color packed in src uint argument.
-
+		
 		Params:
 			src     = uint to extract value from.
 			order   = specifies byte-wise component layout in src.
@@ -328,19 +328,19 @@ private template Color(float_t)
 					gi = (src & 0x0000FF00) >> 8;
 					bi = (src & 0x000000FF) >> 0;
 					break;
-
+				
 				case ByteOrder.XBGR:
 					bi = (src & 0x00FF0000) >> 16;
 					gi = (src & 0x0000FF00) >> 8;
 					ri = (src & 0x000000FF) >> 0;
 					break;
-
+				
 				case ByteOrder.RGBX:
 					ri = (src & 0xFF000000) >>> 24;
 					gi = (src & 0x00FF0000) >>> 16;
 					bi = (src & 0x0000FF00) >>> 8;
 					break;
-
+				
 				case ByteOrder.BGRX:
 					bi = (src & 0xFF000000) >>> 24;
 					gi = (src & 0x00FF0000) >>> 16;
@@ -348,16 +348,16 @@ private template Color(float_t)
 					break;
 			}
 		}
-
+		
 		/** Returns: Whether all components are normalized numbers. */
 		const pure nothrow @safe @property bool isNormal()
 		{
 			return std.math.isNormal(r) && std.math.isNormal(g) && std.math.isNormal(b);
 		}
-
+		
 		/**
 		Returns: Integer value of corresponding component.
-
+		
 		Float value 0 is mapped to integer 0. Float value 1 is mapped to
 		integer 255.
 		*/
@@ -365,22 +365,22 @@ private template Color(float_t)
 		{
 			return cast(int)(r * rgbK);
 		}
-
+		
 		/** ditto */
 		const pure nothrow @safe @property int gi()
 		{
 			return cast(int)(g * rgbK);
 		}
-
+		
 		/** ditto */
 		const pure nothrow @safe @property int bi()
 		{
 			return cast(int)(b * rgbK);
 		}
-
+		
 		/**
 		Sets corresponding component value to mapped value of passed argument.
-
+		
 		Integer value 0 is mapped to float 0. Integer value 255 is mapped to
 		float 1.
 		*/
@@ -388,19 +388,19 @@ private template Color(float_t)
 		{
 			this.r = cast(float_t)r / rgbK;
 		}
-
+		
 		/** ditto */
 		pure nothrow @safe @property void gi(int g)
 		{
 			this.g = cast(float_t)g / rgbK;
 		}
-
+		
 		/** ditto */
 		pure nothrow @safe @property void bi(int b)
 		{
 			this.b = cast(float_t)b / rgbK;
 		}
-
+		
 		/**
 		Returns:
 			This color packed to uint.
@@ -415,7 +415,7 @@ private template Color(float_t)
 			assert(ri >= 0 && ri < 256);
 			assert(gi >= 0 && gi < 256);
 			assert(bi >= 0 && bi < 256);
-
+			
 			final switch (order)
 			{
 				case ByteOrder.XRGB: return (ri << 16) | (gi <<  8) | (bi << 0);
@@ -424,7 +424,7 @@ private template Color(float_t)
 				case ByteOrder.BGRX: return (bi << 24) | (gi << 16) | (ri << 8);
 			}
 		}
-
+		
 		/**
 		Returns:
 			HSL triple representing same color as this.
@@ -433,21 +433,21 @@ private template Color(float_t)
 		{
 			immutable short hslMax = cast(short)hslK;
 			immutable short rgbMax = cast(short)rgbK;
-
+			
 			ubyte h, s, l;
 			ubyte cMax, cMin;                // max and min RGB values
 			short rDelta, gDelta, bDelta;    // intermediate value: % of spread from max
-
+			
 			// get R, G, and B out of DWORD
 			short r = cast(short)ri;
 			short g = cast(short)gi;
 			short b = cast(short)bi;
-
+			
 			// calculate lightness
 			cMax = cast(ubyte)max(max(r, g), b);
 			cMin = cast(ubyte)min(min(r, g), b);
 			l = cast(ubyte)(((cMax + cMin) * hslMax + rgbMax) / (2 * rgbMax));
-
+			
 			if (cMax == cMin)                // r = g = b --> achromatic case
 			{
 				h = s = 0;
@@ -459,43 +459,43 @@ private template Color(float_t)
 					s = cast(ubyte)(((cMax - cMin) * hslMax + (cMax + cMin) / 2) / (cMax + cMin));
 				else
 					s = cast(ubyte)(((cMax - cMin) * hslMax + (2 * rgbMax - cMax - cMin) / 2) / (2 * rgbMax - cMax - cMin));
-
+				
 				// hue
 				rDelta = cast(short)(((cMax - r) * (hslMax / 6) + (cMax - cMin) / 2) / (cMax - cMin));
 				gDelta = cast(short)(((cMax - g) * (hslMax / 6) + (cMax - cMin) / 2) / (cMax - cMin));
 				bDelta = cast(short)(((cMax - b) * (hslMax / 6) + (cMax - cMin) / 2) / (cMax - cMin));
-
+				
 				if (r == cMax)
 					h = cast(ubyte)(bDelta - gDelta);
 				else if (g == cMax)
 					h = cast(ubyte)((hslMax / 3) + rDelta - bDelta);
 				else // B == cMax
 					h = cast(ubyte)((2 * hslMax) / 3 + gDelta - rDelta);
-
+				
 				if(h < 0)
 					h += hslMax;
-
+				
 				if(h > hslMax)
 					h -= hslMax;
 			}
-
+			
 			HSL ret;
 			ret.hi = h;
 			ret.si = s;
 			ret.li = l;
 			return ret;
 		}
-
+		
 		/** Returns: float_t pointer to r component of this color. It's like a _ptr method for arrays. */
 		pure nothrow @safe @property float_t* ptr()
 		{
 			return cast(float_t*)&this;
 		}
-
+		
 		/**
 		Standard operators that have meaning exactly the same as for Vector3, i.e. do
 		component-wise operations.
-
+		
 		Note that division operators do no cheks of value of k, so in case of division
 		by 0 result vector will have infinity components. You can check this with isNormal()
 		method.
@@ -504,19 +504,19 @@ private template Color(float_t)
 		{
 			return r == v.r && g == v.g && b == v.b;
 		}
-
+		
 		/** ditto */
 		const pure nothrow @safe Color3 opNeg()
 		{
 			return Color3(-r, -g, -b);
 		}
-
+		
 		/** ditto */
 		const pure nothrow @safe Color3 opAdd(Color3 v)
 		{
 			return Color3(r + v.r, g + v.g, b + v.b);
 		}
-
+		
 		/** ditto */
 		pure nothrow @safe void opAddAssign(Color3 v)
 		{
@@ -524,13 +524,13 @@ private template Color(float_t)
 			g += v.g;
 			b += v.b;
 		}
-
+		
 		/** ditto */
 		const pure nothrow @safe Color3 opSub(Color3 v)
 		{
 			return Color3(r - v.r, g - v.g, b - v.b);
 		}
-
+		
 		/** ditto */
 		pure nothrow @safe void opSubAssign(Color3 v)
 		{
@@ -538,13 +538,13 @@ private template Color(float_t)
 			g -= v.g;
 			b -= v.b;
 		}
-
+		
 		/** ditto */
 		const pure nothrow @safe Color3 opMul(real k)
 		{
 			return Color3(r * k, g * k, b * k);
 		}
-
+		
 		/** ditto */
 		pure nothrow @safe void opMulAssign(real k)
 		{
@@ -552,19 +552,19 @@ private template Color(float_t)
 			g *= k;
 			b *= k;
 		}
-
+		
 		/** ditto */
 		const pure nothrow @safe Color3 opMulr(real k)
 		{
 			return Color3(r * k, g * k, b * k);
 		}
-
+		
 		/** ditto */
 		const pure nothrow @safe Color3 opDiv(real k)
 		{
 			return Color3(r / k, g / k, b / k);
 		}
-
+		
 		/** ditto */
 		pure nothrow @safe void opDivAssign(real k)
 		{
@@ -572,7 +572,7 @@ private template Color(float_t)
 			g /= k;
 			b /= k;
 		}
-
+		
 		/** Sets all components less than inf to inf. */
 		pure nothrow @safe void clampBelow(float_t inf = 0)
 		{
@@ -580,7 +580,7 @@ private template Color(float_t)
 			.clampBelow(g, inf);
 			.clampBelow(b, inf);
 		}
-
+		
 		/** Returns: Copy of this color with all components less than inf seted to inf. */
 		const pure nothrow @safe Color3 clampedBelow(float_t inf = 0)
 		{
@@ -588,7 +588,7 @@ private template Color(float_t)
 			ret.clampBelow(inf);
 			return ret;
 		}
-
+		
 		/** Sets all components greater than sup to sup. */
 		pure nothrow @safe void clampAbove(float_t sup = 1)
 		{
@@ -596,7 +596,7 @@ private template Color(float_t)
 			.clampAbove(g, sup);
 			.clampAbove(b, sup);
 		}
-
+		
 		/** Returns: Copy of this color with all components greater than sup seted to sup. */
 		const pure nothrow @safe Color3 clampedAbove(float_t sup = 1)
 		{
@@ -604,7 +604,7 @@ private template Color(float_t)
 			ret.clampBelow(sup);
 			return ret;
 		}
-
+		
 		/**
 		Sets all components less than inf to inf and
 		all components greater than sup to sup.
@@ -614,7 +614,7 @@ private template Color(float_t)
 			clampBelow(inf);
 			clampAbove(sup);
 		}
-
+		
 		/**
 		Returns:
 			Copy of this color with all components less than inf seted to inf
@@ -626,25 +626,25 @@ private template Color(float_t)
 			ret.clamp(inf, sup);
 			return ret;
 		}
-
+		
 		/** Returns: Copy of this color with float type components. */
 		const pure nothrow @safe Color3f toColor3f()
 		{
 			return Color3f(cast(float)r, cast(float)g, cast(float)b);
 		}
-
+		
 		/** Returns: Copy of this color with double type components. */
 		const pure nothrow @safe Color3d toColor3d()
 		{
 			return Color3d(cast(double)r, cast(double)g, cast(double)b);
 		}
-
+		
 		/** Returns: Copy of this color with real type components. */
 		const pure nothrow @safe Color3r toColor3r()
 		{
 			return Color3r(cast(real)r, cast(real)g, cast(real)b);
 		}
-
+		
 		/**
 		Routines known as swizzling.
 		Returns:
@@ -654,7 +654,7 @@ private template Color(float_t)
 		const pure nothrow @safe @property Color4 rgb0()    { return Color4(r, g, b, 0); }
 		const pure nothrow @safe @property Color4 rgb1()    { return Color4(r, g, b, 1); } /// ditto
 	}
-
+	
 	/**
 	Approximate equality function.
 	Params:
@@ -666,10 +666,9 @@ private template Color(float_t)
 		Color3 c = a - b;
 		return .equal(c.r * c.r + c.g * c.g + c.b * c.b, 0, relprec, absprec);
 	}
-
+	
 	alias Lerp!(Color3).lerp lerp; /// Introduces linear interpolation function for Color3.
-
-
+	
 	/************************************************************************************
 	Red, Green, Blue triple with additional Alpha component.
 	*************************************************************************************/
@@ -682,13 +681,13 @@ private template Color(float_t)
 			float_t b; /// Blue.
 			float_t a; /// Alpha.
 		}
-
+		
 		/// Color4 with all components seted to NaN.
 		static immutable Color4 nan = { float_t.nan, float_t.nan, float_t.nan, float_t.nan };
-
+		
 		/**
 		Methods to construct color in C-like syntax.
-
+		
 		Examples:
 		------------
 		Color4 c1 = Color4(0.1, 0.2, 0.3, 1);
@@ -702,7 +701,7 @@ private template Color(float_t)
 			v.set(r, g, b, a);
 			return v;
 		}
-
+		
 		/** ditto */
 		static pure nothrow @safe Color4 opCall(Color3 rgb, float_t a = 1)
 		{
@@ -710,16 +709,15 @@ private template Color(float_t)
 			v.set(rgb, a);
 			return v;
 		}
-
-
+		
 		/**
 		Method to construct color in C-like syntax from value specified
 		in uint parameter.
-
+		
 		Params:
 			src     = uint to extract value from.
 			order   = specifies byte-wise _order in src.
-
+		
 		Examples:
 		------------
 		Color4 c = Color4(0x99FFEEDD, ByteOrder.ARGB);
@@ -731,8 +729,7 @@ private template Color(float_t)
 			v.set(src, order);
 			return v;
 		}
-
-
+		
 		/** Set components to values of passed arguments. */
 		pure nothrow @safe void set(float_t r, float_t g, float_t b, float_t a)
 		{
@@ -741,18 +738,17 @@ private template Color(float_t)
 			this.b = b;
 			this.a = a;
 		}
-
+		
 		/** ditto */
 		pure nothrow @safe void set(Color3 rgb, float_t a)
 		{
 			this.rgb = rgb;
 			this.a = a;
 		}
-
-
+		
 		/**
 		Sets components according to color packed in src uint argument.
-
+		
 		Params:
 			src     = uint to extract value from.
 			order   = specifies byte-wise layout in src.
@@ -767,21 +763,21 @@ private template Color(float_t)
 					gi = (src & 0x0000FF00) >>> 8;
 					bi = (src & 0x000000FF) >>> 0;
 					break;
-
+				
 				case ByteOrder.ABGR:
 					ai = (src & 0xFF000000) >>> 24;
 					bi = (src & 0x00FF0000) >>> 16;
 					gi = (src & 0x0000FF00) >>> 8;
 					ri = (src & 0x000000FF) >>> 0;
 					break;
-
+				
 				case ByteOrder.RGBA:
 					ri = (src & 0xFF000000) >>> 24;
 					gi = (src & 0x00FF0000) >>> 16;
 					bi = (src & 0x0000FF00) >>> 8;
 					ai = (src & 0x000000FF) >>> 0;
 					break;
-
+				
 				case ByteOrder.BGRA:
 					bi = (src & 0xFF000000) >>> 24;
 					gi = (src & 0x00FF0000) >>> 16;
@@ -790,16 +786,16 @@ private template Color(float_t)
 					break;
 			}
 		}
-
+		
 		/** Returns: Whether all components are normalized numbers. */
 		const pure nothrow @safe @property bool isNormal()
 		{
 			return std.math.isNormal(r) && std.math.isNormal(g) && std.math.isNormal(b) && std.math.isNormal(a);
 		}
-
+		
 		/**
 		Returns: Integer value of corresponding component.
-
+		
 		Float value 0 is mapped to integer 0. Float value 1 is mapped to
 		integer 255.
 		*/
@@ -807,28 +803,28 @@ private template Color(float_t)
 		{
 			return cast(int)(r * rgbK);
 		}
-
+		
 		/** ditto */
 		const pure nothrow @safe @property int gi()
 		{
 			return cast(int)(g * rgbK);
 		}
-
+		
 		/** ditto */
 		const pure nothrow @safe @property int bi()
 		{
 			return cast(int)(b * rgbK);
 		}
-
+		
 		/** ditto */
 		const pure nothrow @safe @property int ai()
 		{
 			return cast(int)(a * rgbK);
 		}
-
+		
 		/**
 		Sets corresponding component value to mapped value of passed argument.
-
+		
 		Integer value 0 is mapped to float 0. Integer value 255 is mapped to
 		float 1.
 		*/
@@ -836,25 +832,25 @@ private template Color(float_t)
 		{
 			this.r = cast(float_t)r / rgbK;
 		}
-
+		
 		/** ditto */
 		pure nothrow @safe @property void gi(int g)
 		{
 			this.g = cast(float_t)g / rgbK;
 		}
-
+		
 		/** ditto */
 		pure nothrow @safe @property void bi(int b)
 		{
 			this.b = cast(float_t)b / rgbK;
 		}
-
+		
 		/** ditto */
 		pure nothrow @safe @property void ai(int a)
 		{
 			this.a = cast(float_t)a / rgbK;
 		}
-
+		
 		/**
 		Returns:
 			This color packed to uint.
@@ -870,7 +866,7 @@ private template Color(float_t)
 			assert(gi >= 0 && gi < 256);
 			assert(bi >= 0 && bi < 256);
 			assert(ai >= 0 && ai < 256);
-
+			
 			final switch (order)
 			{
 				case ByteOrder.ARGB: return (ai << 24) | (ri << 16) | (gi <<  8) | (bi << 0);
@@ -879,30 +875,29 @@ private template Color(float_t)
 				case ByteOrder.BGRA: return (bi << 24) | (gi << 16) | (ri <<  8) | (ai << 0);
 			}
 		}
-
+		
 		/**
 		Returns:
 			HSL triple representing same color as this.
-
+		
 		Alpha value is ignored.
 		*/
 		const pure nothrow @safe HSL toHSL()
 		{
 			return rgb.toHSL();
 		}
-
+		
 		/** Returns: float_t pointer to r component of this color. It's like a _ptr method for arrays. */
 		pure nothrow @safe @property float_t* ptr()
 		{
 			return cast(float_t*)&this;
 		}
-
-
+		
 		/**
 		Standard operators that have meaning exactly the same as for Vector4, i.e. do
 		component-wise operations. So alpha component equaly in rights takes place in all
 		operations, to affect just RGB part use swizzling operations.
-
+		
 		Note that division operators do no cheks of value of k, so in case of division
 		by 0 result vector will have infinity components. You can check this with isNormal()
 		method.
@@ -911,19 +906,19 @@ private template Color(float_t)
 		{
 			return r == v.r && g == v.g && b == v.b && a == v.a;
 		}
-
+		
 		/** ditto */
 		const pure nothrow @safe Color4 opNeg()
 		{
 			return Color4(-r, -g, -b, -a);
 		}
-
+		
 		/** ditto */
 		const pure nothrow @safe Color4 opAdd(Color4 v)
 		{
 			return Color4(r + v.r, g + v.g, b + v.b, a + v.a);
 		}
-
+		
 		/** ditto */
 		pure nothrow @safe void opAddAssign(Color4 v)
 		{
@@ -932,13 +927,13 @@ private template Color(float_t)
 			b += v.b;
 			a += v.a;
 		}
-
+		
 		/** ditto */
 		const pure nothrow @safe Color4 opSub(Color4 v)
 		{
 			return Color4(r - v.r, g - v.g, b - v.b, a - v.a);
 		}
-
+		
 		/** ditto */
 		pure nothrow @safe void opSubAssign(Color4 v)
 		{
@@ -947,13 +942,13 @@ private template Color(float_t)
 			b -= v.b;
 			a -= v.a;
 		}
-
+		
 		/** ditto */
 		const pure nothrow @safe Color4 opMul(real k)
 		{
 			return Color4(r * k, g * k, b * k, a * k);
 		}
-
+		
 		/** ditto */
 		pure nothrow @safe void opMulAssign(real k)
 		{
@@ -962,19 +957,19 @@ private template Color(float_t)
 			b *= k;
 			a *= k;
 		}
-
+		
 		/** ditto */
 		const pure nothrow @safe Color4 opMulr(real k)
 		{
 			return Color4(r * k, g * k, b * k, a * k);
 		}
-
+		
 		/** ditto */
 		const pure nothrow @safe Color4 opDiv(real k)
 		{
 			return Color4(r / k, g / k, b / k, a / k);
 		}
-
+		
 		/** ditto */
 		pure nothrow @safe void opDivAssign(real k)
 		{
@@ -983,7 +978,7 @@ private template Color(float_t)
 			b /= k;
 			a /= k;
 		}
-
+		
 		/** Sets all components less than inf to inf. */
 		pure nothrow @safe void clampBelow(float_t inf = 0)
 		{
@@ -992,7 +987,7 @@ private template Color(float_t)
 			.clampBelow(b, inf);
 			.clampBelow(a, inf);
 		}
-
+		
 		/** Returns: Copy of this color with all components less than inf seted to inf. */
 		const pure nothrow @safe Color4 clampedBelow(float_t inf = 0)
 		{
@@ -1000,7 +995,7 @@ private template Color(float_t)
 			ret.clampBelow(inf);
 			return ret;
 		}
-
+		
 		/** Sets all components greater than sup to sup. */
 		pure nothrow @safe void clampAbove(float_t sup = 1)
 		{
@@ -1009,7 +1004,7 @@ private template Color(float_t)
 			.clampAbove(b, sup);
 			.clampAbove(a, sup);
 		}
-
+		
 		/** Returns: Copy of this color with all components greater than sup seted to sup. */
 		const pure nothrow @safe Color4 clampedAbove(float_t sup = 1)
 		{
@@ -1017,7 +1012,7 @@ private template Color(float_t)
 			ret.clampBelow(sup);
 			return ret;
 		}
-
+		
 		/**
 		Sets all components less than inf to inf and
 		all components greater than sup to sup.
@@ -1027,7 +1022,7 @@ private template Color(float_t)
 			clampBelow(inf);
 			clampAbove(sup);
 		}
-
+		
 		/**
 		Returns:
 			Copy of this color with all components less than inf seted to inf
@@ -1039,25 +1034,25 @@ private template Color(float_t)
 			ret.clamp(inf, sup);
 			return ret;
 		}
-
+		
 		/** Returns: Copy of this color with float type components. */
 		const pure nothrow @safe Color4f toColor4f()
 		{
 			return Color4f(cast(float)r, cast(float)g, cast(float)b, cast(float)a);
 		}
-
+		
 		/** Returns: Copy of this color with double type components. */
 		const pure nothrow @safe Color4d toColor4d()
 		{
 			return Color4d(cast(double)r, cast(double)g, cast(double)b, cast(double)a);
 		}
-
+		
 		/** Returns: Copy of this color with real type components. */
 		const pure nothrow @safe Color4r toColor4r()
 		{
 			return Color4r(cast(real)r, cast(real)g, cast(real)b, cast(real)a);
 		}
-
+		
 		/**
 		Routine known as swizzling.
 		Returns:
@@ -1067,7 +1062,7 @@ private template Color(float_t)
 		{
 			return Color3(r, g, b);
 		}
-
+		
 		/**
 		Routine known as swizzling.
 		Sets RGB part components to values of passed _rgb argument's components.
@@ -1079,7 +1074,7 @@ private template Color(float_t)
 			b = rgb.b;
 		}
 	}
-
+	
 	/**
 	Approximate equality function.
 	Params:
@@ -1091,7 +1086,7 @@ private template Color(float_t)
 		Color4 c = a - b;
 		return .equal(c.r * c.r + c.g * c.g + c.b * c.b + c.a * c.a, 0, relprec, absprec);
 	}
-
+	
 	alias Lerp!(Color4).lerp lerp; /// Introduces linear interpolation function for Color4.
 }
 

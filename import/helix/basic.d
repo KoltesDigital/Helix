@@ -70,21 +70,21 @@ pure nothrow @trusted bool equal(real x, real y, int relprec = defrelprec, int a
 {
 	/* Author: Don Clugston, 18 Aug 2005.
 	 */
-
+	
 	if (x == y)
 		return true; // ensure diff!=0, cope with INF.
-
+	
 	real diff = fabs(x - y);
 	
 	ushort *pa = cast(ushort*)(&x);
 	ushort *pb = cast(ushort*)(&y);
 	ushort *pd = cast(ushort*)(&diff);
-
+	
 	// This check is added by me. If absolute difference between
 	// x and y is less than 2^(-absprec) then count them equal.
 	if (pd[4] < 0x3FFF - absprec)
 		return true;
-
+	
 	// The difference in abs(exponent) between x or y and abs(x-y)
 	// is equal to the number of mantissa bits of x which are
 	// equal to y. If negative, x and y have different exponents.
@@ -95,7 +95,7 @@ pure nothrow @trusted bool equal(real x, real y, int relprec = defrelprec, int a
 	// always 1 lower than we want, except that if bitsdiff==0,
 	// they could have 0 or 1 bits in common.
 	int bitsdiff = ( ((pa[4]&0x7FFF) + (pb[4]&0x7FFF)-1)>>1) - pd[4];
-
+	
 	if (pd[4] == 0)
 	{   // Difference is denormal
 		// For denormals, we need to add the number of zeros that
@@ -104,10 +104,10 @@ pure nothrow @trusted bool equal(real x, real y, int relprec = defrelprec, int a
 		diff *= 0x1p+63;
 		return bitsdiff + real.mant_dig - pd[4] >= relprec;
 	}
-
+	
 	if (bitsdiff > 0)
 		return bitsdiff + 1 >= relprec; // add the 1 we subtracted before
-
+	
 	// Avoid out-by-1 errors when factor is almost 2.
 	return (bitsdiff == 0) ? (relprec <= 1) : false;
 }
@@ -171,7 +171,7 @@ template MinMax(T)
 	{
 		return (a > b) ? a : b;
 	}
-
+	
 	/**
 	Returns:
 		Minimal of a and b.
@@ -223,7 +223,7 @@ template Clamp(T)
 	{
 		return x = max(x, inf);
 	}
-
+	
 	/**
 	Makes value of x to be not greater than sup. Method can change value of x.
 	Returns:
@@ -233,7 +233,7 @@ template Clamp(T)
 	{
 		return x = min(x, sup);
 	}
-
+	
 	/**
 	Makes value of x to be nor less than inf nor greater than sup.
 	Method can change value of x.

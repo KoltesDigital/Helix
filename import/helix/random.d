@@ -74,13 +74,13 @@ struct Rand48Engine
 		
 		ulong x = 0;
 	}
-
+	
 	static immutable
 	{
 		uint min = 0;
 		uint max = uint.max;
 	}
-
+	
 	/**
 	Generates next pseudo-random number.
 	Returns:
@@ -91,10 +91,10 @@ struct Rand48Engine
 		x = (a * x + b) & mask;
 		return cast(uint)(x >> 16);
 	}
-
+	
 	/**
 	Reinitializes engine. Sets new _seed used for pseudo-random number generation.
-
+	
 	If two different linear congruential engines are initialized with the same
 	_seed they will generate equivalent pseudo-number sequences.
 	Params:
@@ -104,7 +104,7 @@ struct Rand48Engine
 	{
 		x = nx & mask;
 	}
-
+	
 	unittest
 	{
 		Rand48Engine e1;
@@ -112,13 +112,13 @@ struct Rand48Engine
 		loop(e1.pop());
 		
 		Rand48Engine e2 = e1;
-
+		
 		// must generate the same sequence
 		loop(assert(e1.pop() == e2.pop()));
-
+		
 		e1.seed = 54321;
 		e2.seed = 54321;
-
+		
 		// must generate the same sequence
 		loop(assert(e1.pop() == e2.pop()));
 	}
@@ -131,23 +131,23 @@ struct MersenneTwisterEngine
 	{
 		uint[n] s = void;
 		uint next = 0;
-
+		
 		static pure nothrow @safe uint twist(uint m, uint u, uint v)
 		{
 			return m ^ (((u & 0x8000_0000u) | (v & 0x7fff_ffffu)) >> 1) ^
 				(-(u & 0x1u) & 0x9908_b0dfu);
 		}
 	}
-
+	
 	static immutable
 	{
 		uint min = 0;
 		uint max = uint.max;
-
+	
 		uint n = 624;
 		uint m = 397;
 	}
-
+	
 	pure nothrow @trusted uint pop()
 	{
 		if (next >= n) // overflow, engine reload needed
@@ -156,35 +156,35 @@ struct MersenneTwisterEngine
 			
 			for (int i = n - m; i--; ++p)
 				*p = twist( p[m], p[0], p[1] );
-
+			
 			for (int i = m; --i; ++p)
 				*p = twist( p[m - n], p[0], p[1] );
-
+			
 			*p = twist( p[m - n], p[0], s[0] );
-
+			
 			next = 0;
 		}
-
+		
 		// use 'state.ptr[next]' instead of 'state[next]' to
 		// suppress array bound checks, namely performance penalty
 		uint x = s.ptr[next];
 		++next;
-
+		
 		x ^= (x >> 11);
 		x ^= (x <<  7) & 0x9d2c_5680u;
 		x ^= (x << 15) & 0xefc6_0000u;
 		return x ^ (x >> 18);
 	}
-
+	
 	pure nothrow @safe @property void seed(uint x)
 	{
 		s[0] = x;
 		for (int i = 1; i < n; ++i)
 			s[i] = 1_812_433_253u * (s[i-1] ^ (s[i-1] >> 30)) + i;
-
+		
 		next = 1;
 	}
-
+	
 	unittest
 	{
 		MersenneTwisterEngine e1;
@@ -192,13 +192,13 @@ struct MersenneTwisterEngine
 		loop(e1.pop());
 		
 		MersenneTwisterEngine e2 = e1;
-
+		
 		// must generate the same sequence
 		loop(assert(e1.pop() == e2.pop()));
-
+		
 		e1.seed = 54321;
 		e2.seed = 54321;
-
+		
 		// must generate the same sequence
 		loop(assert(e1.pop() == e2.pop()));
 	}
@@ -218,13 +218,13 @@ struct UnitUniformEngine(BaseEngine, bool closedLeft, bool closedRight)
 		
 		BaseEngine baseEngine;
 	}
-
+	
 	static immutable
 	{
 		real min = (closedLeft ? 0 : increment) * (1/denominator);
 		real max = (range + (closedLeft ? 0 : increment)) * (1/denominator);
 	}
-
+	
 	pure nothrow @safe real pop()
 	{
 		auto x = baseEngine.pop();
@@ -242,28 +242,28 @@ struct UnitUniformEngine(BaseEngine, bool closedLeft, bool closedRight)
 			return (cast(real)(x - BaseEngine.min) + (closedLeft ? 0 : increment)) * (1/denominator);
 		}
 	}
-
+	
 	pure nothrow @safe @property void seed(uint x)
 	{
 		baseEngine.seed = x;
 	}
-
+	
 	unittest
 	{
 		alias UnitUniformEngine!(Rand48Engine, true, true) fullClosed;
 		alias UnitUniformEngine!(Rand48Engine, true, false) closedLeft;
 		alias UnitUniformEngine!(Rand48Engine, false, true) closedRight;
 		alias UnitUniformEngine!(Rand48Engine, false, false) fullOpened;
-
+		
 		static assert(fullClosed.min == 0.0L);
 		static assert(fullClosed.max == 1.0L);
-
+		
 		static assert(closedLeft.min == 0.0L);
 		static assert(closedLeft.max < 1.0L);
 		
 		static assert(closedRight.min > 0.0L);
 		static assert(closedRight.max == 1.0L);
-
+		
 		static assert(fullOpened.min > 0.0L);
 		static assert(fullOpened.max < 1.0L);
 	}
@@ -280,7 +280,7 @@ struct HighresUnitUniformEngine(BaseEngine, bool closedLeft, bool closedRight)
 			real increment = 2.0L;
 			real denominator = rawMax + (closedLeft ? 0 : increment) + (closedRight ? 0 : increment);
 		}
-
+		
 		BaseEngine baseEngine;
 	}
 	
@@ -289,7 +289,7 @@ struct HighresUnitUniformEngine(BaseEngine, bool closedLeft, bool closedRight)
 		real min = (closedLeft ? 0 : increment) * (1 / denominator);
 		real max = (rawMax + (closedLeft ? 0 : increment)) * (1 / denominator);
 	}
-
+	
 	pure nothrow @safe real pop()
 	{
 		static if (
@@ -307,34 +307,34 @@ struct HighresUnitUniformEngine(BaseEngine, bool closedLeft, bool closedRight)
 			// but this feature isn't implemented for now and can be introduced
 			// in future.
 			static assert( BaseEngine.min == 0 && BaseEngine.max == uint.max );
-
+			
 			uint a = cast(uint)baseEngine.pop();
 			uint b = cast(uint)baseEngine.pop();
 			return (a * 0x1p32 + b + (closedLeft ? 0 : increment)) * (1 / denominator);
 		}
 	}
-
+	
 	pure nothrow @safe @property void seed(uint x)
 	{
 		baseEngine.seed = x;
 	}
-
+	
 	unittest
 	{
 		alias HighresUnitUniformEngine!(Rand48Engine, true, true) fullClosed;
 		alias HighresUnitUniformEngine!(Rand48Engine, true, false) closedLeft;
 		alias HighresUnitUniformEngine!(Rand48Engine, false, true) closedRight;
 		alias HighresUnitUniformEngine!(Rand48Engine, false, false) fullOpened;
-
+		
 		static assert(fullClosed.min == 0.0L);
 		static assert(fullClosed.max == 1.0L);
-
+		
 		static assert(closedLeft.min == 0.0L);
 		static assert(closedLeft.max < 1.0L);
 		
 		static assert(closedRight.min > 0.0L);
 		static assert(closedRight.max == 1.0L);
-
+		
 		static assert(fullOpened.min > 0.0L);
 		static assert(fullOpened.max < 1.0L);
 	}
