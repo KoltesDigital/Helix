@@ -194,9 +194,15 @@ private template LinearAlgebra(float_t)
 			relprec, absprec = Parameters passed to equal function while comparison of
 							   norm square and 1. Have the same meaning as in equal function.
 		*/
-		const pure nothrow @safe @property bool isUnit(int relprec = defrelprec, int absprec = defabsprec)
+		const pure nothrow @safe bool isUnitEqual(int relprec, int absprec)
 		{
-			return equal( normSquare(), 1, relprec, absprec );
+			return equal( normSquare, 1, relprec, absprec );
+		}
+		
+		/** ditto */
+		const pure nothrow @safe @property bool isUnit()
+		{
+			return isUnitEqual(defrelprec, defabsprec);
 		}
 		
 		/** Returns: Norm (also known as length, magnitude) of vector. */
@@ -480,9 +486,15 @@ private template LinearAlgebra(float_t)
 			relprec, absprec = Parameters passed to equal function while comparison of
 							   norm square and 1. Have the same meaning as in equal function.
 		*/
-		const pure nothrow @safe @property bool isUnit(int relprec = defrelprec, int absprec = defabsprec)
+		const pure nothrow @safe bool isUnitEqual(int relprec, int absprec)
 		{
 			return equal( normSquare(), 1, relprec, absprec );
+		}
+		
+		/** ditto */
+		const pure nothrow @safe @property bool isUnit()
+		{
+			return isUnitEqual(defrelprec, defabsprec);
 		}
 		
 		/** Returns: Norm (also known as length, magnitude) of vector. */
@@ -723,9 +735,9 @@ private template LinearAlgebra(float_t)
 	pure nothrow @safe bool isBasisOrthonormal(Vector3 r, Vector3 s, Vector3 t, int relprec = defrelprec, int absprec = defabsprec)
 	{
 		return isBasisOrthogonal(r, s, t, relprec, absprec) &&
-			r.isUnit(relprec, absprec) &&
-			s.isUnit(relprec, absprec) &&
-			t.isUnit(relprec, absprec);
+			r.isUnitEqual(relprec, absprec) &&
+			s.isUnitEqual(relprec, absprec) &&
+			t.isUnitEqual(relprec, absprec);
 	}
 	
 	/** Returns: Outer product between passed vectors. */
@@ -836,9 +848,15 @@ private template LinearAlgebra(float_t)
 			relprec, absprec = Parameters passed to equal function while comparison of
 							   norm square and 1. Have the same meaning as in equal function.
 		*/
-		const pure nothrow @safe @property bool isUnit(int relprec = defrelprec, int absprec = defabsprec)
+		const pure nothrow @safe bool isUnitEqual(int relprec, int absprec)
 		{
 			return equal( normSquare, 1, relprec, absprec );
+		}
+		
+		/** ditto */
+		const pure nothrow @safe @property bool isUnit()
+		{
+			return isUnitEqual(defrelprec, defabsprec);
 		}
 		
 		/**
@@ -1248,9 +1266,15 @@ private template LinearAlgebra(float_t)
 			relprec, absprec = Parameters passed to equal function while comparison of
 							   norm square and 1. Have the same meaning as in equal function.
 		*/
-		const pure nothrow @safe @property bool isUnit(int relprec = defrelprec, int absprec = defabsprec)
+		const pure nothrow @safe bool isUnitEqual(int relprec, int absprec)
 		{
 			return equal( normSquare(), 1, relprec, absprec );
+		}
+		
+		/** ditto */
+		const pure nothrow @safe @property bool isUnit()
+		{
+			return isUnitEqual(defrelprec, defabsprec);
 		}
 		
 		/** Returns: Norm (also known as length, magnitude) of quaternion. */
@@ -1763,9 +1787,15 @@ private template LinearAlgebra(float_t)
 			relprec, absprec = Parameters passed to equal function while calculations.
 							   Have the same meaning as in equal function.
 		*/
-		const pure nothrow @safe @property bool isIdentity(int relprec = defrelprec, int absprec = defabsprec)
+		const pure nothrow @safe bool isIdentityEqual(int relprec, int absprec)
 		{
 			return equal(this, identity, relprec, absprec);
+		}
+		
+		/** ditto */
+		const pure nothrow @safe @property bool isIdentity()
+		{
+			return isIdentityEqual(defrelprec, defabsprec);
 		}
 		
 		/** Returns: Whether all components are normalized numbers. */
@@ -1784,9 +1814,15 @@ private template LinearAlgebra(float_t)
 		References:
 			$(LINK http://en.wikipedia.org/wiki/Orthogonal_matrix).
 		*/
-		const pure nothrow @safe @property bool isOrthogonal(int relprec = defrelprec, int absprec = defabsprec)
+		const pure nothrow @safe bool isOrthogonalEqual(int relprec, int absprec)
 		{
 			return equal(abs(cross(v[0],v[1])), 1.0, relprec, absprec);
+		}
+		
+		/** ditto */
+		const pure nothrow @safe @property bool isOrthogonal()
+		{
+			return isOrthogonalEqual(defrelprec, defabsprec);
 		}
 		
 		/**
@@ -1795,9 +1831,15 @@ private template LinearAlgebra(float_t)
 			relprec, absprec = Parameters passed to equal function while calculations.
 							   Have the same meaning as in equal function.
 		*/
-		const pure nothrow @safe @property bool isRotation(int relprec = defrelprec, int absprec = defabsprec)
+		const pure nothrow @safe bool isRotationEqual(int relprec, int absprec)
 		{
-			return isOrthogonal(relprec, absprec);
+			return isOrthogonalEqual(relprec, absprec);
+		}
+		
+		/** ditto */
+		const pure nothrow @safe @property bool isRotation()
+		{
+			return isRotationEqual(defrelprec, defabsprec);
 		}
 		
 		/**
@@ -1806,9 +1848,15 @@ private template LinearAlgebra(float_t)
 			relprec, absprec = Parameters passed to equal function while calculations.
 							   Have the same meaning as in equal function.
 		*/
-		const pure nothrow @safe @property bool isZero(int relprec = defrelprec, int absprec = defabsprec)
+		const pure nothrow @safe bool isZeroEqual(int relprec, int absprec)
 		{
 			return equal(normSquare, 0, relprec, absprec);
+		}
+		
+		/** ditto */
+		const pure nothrow @safe @property bool isZero()
+		{
+			return isZeroEqual(defrelprec, defabsprec);
 		}
 		
 		/**
@@ -2430,9 +2478,15 @@ private template LinearAlgebra(float_t)
 		References:
 			$(LINK http://en.wikipedia.org/wiki/Affine_transformation).
 		*/
+		const pure nothrow @safe bool isAffineEqual(int relprec, int absprec)
+		{
+			return equal(m20, 0, relprec, absprec) && equal(m21, 0, relprec, absprec) && equal(m22, 1, relprec, absprec);
+		}
+		
+		/** ditto */
 		const pure nothrow @safe @property bool isAffine()
 		{
-			return equal(m20, 0) && equal(m21, 0) && equal(m22, 1);
+			return isAffineEqual(defrelprec, defabsprec);
 		}
 		
 		/**
@@ -2441,11 +2495,17 @@ private template LinearAlgebra(float_t)
 			relprec, absprec = Parameters passed to equal function while calculations.
 							   Have the same meaning as in equal function.
 		*/
-		const pure nothrow @safe @property bool isIdentity(int relprec = defrelprec, int absprec = defabsprec)
+		const pure nothrow @safe bool isIdentityEqual(int relprec, int absprec)
 		{
 			return equal(this, identity, relprec, absprec);
 		}
-			
+		
+		/** ditto */
+		const pure nothrow @safe @property bool isIdentity()
+		{
+			return isIdentityEqual(defrelprec, defabsprec);
+		}
+		
 		/** Returns: Whether all components are normalized numbers. */
 		const pure nothrow @safe @property bool isNormal()
 		{
@@ -2463,9 +2523,15 @@ private template LinearAlgebra(float_t)
 		References:
 			$(LINK http://en.wikipedia.org/wiki/Orthogonal_matrix).
 		*/
-		const pure nothrow @safe @property bool isOrthogonal(int relprec = defrelprec, int absprec = defabsprec)
+		const pure nothrow @safe bool isOrthogonalEqual(int relprec, int absprec)
 		{
 			return isBasisOrthonormal(v[0], v[1], v[2], relprec, absprec);
+		}
+		
+		/** ditto */
+		const pure nothrow @safe @property bool isOrthogonal()
+		{
+			return isOrthogonalEqual(defrelprec, defabsprec);
 		}
 		
 		/**
@@ -2474,9 +2540,15 @@ private template LinearAlgebra(float_t)
 			relprec, absprec = Parameters passed to equal function while calculations.
 							   Have the same meaning as in equal function.
 		*/
-		const pure nothrow @safe @property bool isRotation(int relprec = defrelprec, int absprec = defabsprec)
+		const pure nothrow @safe bool isRotationEqual(int relprec, int absprec)
 		{
-			return isOrthogonal(relprec, absprec) && equal(v[2], cross(v[0], v[1]), relprec, absprec);
+			return isOrthogonalEqual(relprec, absprec) && equal(v[2], cross(v[0], v[1]), relprec, absprec);
+		}
+		
+		/** ditto */
+		const pure nothrow @safe @property bool isRotation()
+		{
+			return isRotationEqual(defrelprec, defabsprec);
 		}
 		
 		/**
@@ -2485,9 +2557,15 @@ private template LinearAlgebra(float_t)
 			relprec, absprec = Parameters passed to equal function while calculations.
 							   Have the same meaning as in equal function.
 		*/
-		const pure nothrow @safe @property bool isZero(int relprec = defrelprec, int absprec = defabsprec)
+		const pure nothrow @safe bool isZeroEqual(int relprec, int absprec)
 		{
 			return equal(normSquare(), 0, relprec, absprec);
+		}
+		
+		/** ditto */
+		const pure nothrow @safe @property bool isZero()
+		{
+			return isZeroEqual(defrelprec, defabsprec);
 		}
 		
 		/**
@@ -3277,9 +3355,15 @@ private template LinearAlgebra(float_t)
 		References:
 			$(LINK http://en.wikipedia.org/wiki/Affine_transformation).
 		*/
+		const pure nothrow @safe bool isAffineEqual(int relprec, int absprec)
+		{
+			return equal(m30, 0, relprec, absprec) && equal(m31, 0, relprec, absprec) && equal(m32, 0, relprec, absprec) && equal(m33, 1, relprec, absprec);
+		}
+		
+		/** ditto */
 		const pure nothrow @safe @property bool isAffine()
 		{
-			return equal(m30, 0) && equal(m31, 0) && equal(m32, 0) && equal(m33, 1);
+			return isAffineEqual(defrelprec, defabsprec);
 		}
 		
 		/**
@@ -3288,9 +3372,15 @@ private template LinearAlgebra(float_t)
 			relprec, absprec = Parameters passed to equal function while calculations.
 							   Have the same meaning as in equal function.
 		*/
-		const pure nothrow @safe @property bool isIdentity(int relprec = defrelprec, int absprec = defabsprec)
+		const pure nothrow @safe bool isIdentityEqual(int relprec, int absprec)
 		{
 			return equal(this, identity, relprec, absprec);
+		}
+		
+		/** ditto */
+		const pure nothrow @safe @property bool isIdentity()
+		{
+			return isIdentityEqual(defrelprec, defabsprec);
 		}
 		
 		/** Returns: Whether all components are normalized numbers. */
@@ -3309,9 +3399,15 @@ private template LinearAlgebra(float_t)
 			relprec, absprec = Parameters passed to equal function while calculations.
 						Has the same meaning as in equal function.
 		*/
-		const pure nothrow @safe @property bool isZero(int relprec = defrelprec, int absprec = defabsprec)
+		const pure nothrow @safe bool isZeroEqual(int relprec, int absprec)
 		{
 			return equal(normSquare(), 0, relprec, absprec);
+		}
+		
+		/** ditto */
+		const pure nothrow @safe @property bool isZero()
+		{
+			return isZeroEqual(defrelprec, defabsprec);
 		}
 		
 		/**

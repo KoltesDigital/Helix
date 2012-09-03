@@ -62,6 +62,12 @@ version (unittest)
 
 struct Rand48Engine
 {
+	static immutable
+	{
+		uint min = 0;
+		uint max = uint.max;
+	}
+	
 	private
 	{
 		static immutable
@@ -73,12 +79,6 @@ struct Rand48Engine
 		}
 		
 		ulong x = 0;
-	}
-	
-	static immutable
-	{
-		uint min = 0;
-		uint max = uint.max;
 	}
 	
 	/**
@@ -127,6 +127,15 @@ struct Rand48Engine
 /*********************************************************************/
 struct MersenneTwisterEngine
 {
+	static immutable
+	{
+		uint min = 0;
+		uint max = uint.max;
+	
+		uint n = 624;
+		uint m = 397;
+	}
+	
 	private
 	{
 		uint[n] s = void;
@@ -137,15 +146,6 @@ struct MersenneTwisterEngine
 			return m ^ (((u & 0x8000_0000u) | (v & 0x7fff_ffffu)) >> 1) ^
 				(-(u & 0x1u) & 0x9908_b0dfu);
 		}
-	}
-	
-	static immutable
-	{
-		uint min = 0;
-		uint max = uint.max;
-	
-		uint n = 624;
-		uint m = 397;
 	}
 	
 	pure nothrow @trusted uint pop()
